@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sapinover Research | Overnight Alpha Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--slate-900:#0f172a;--slate-800:#1e293b;--slate-700:#334155;--slate-600:#475569;--slate-500:#64748b;--slate-400:#94a3b8;--slate-300:#cbd5e1;--slate-200:#e2e8f0;--slate-100:#f1f5f9;--slate-50:#f8fafc;--amber-600:#d97706;--amber-500:#f59e0b;--amber-400:#fbbf24;--amber-100:#fef3c7;--emerald-600:#059669;--emerald-500:#10b981;--rose-600:#e11d48;--rose-500:#f43f5e;--sky-500:#0ea5e9;--q1-color:#ea580c;--q2-color:#059669;--q3-color:#0284c7;--q4-color:#dc2626;--font-display:'Cormorant Garamond',Georgia,serif;--font-body:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-serif}
+        body{font-family:var(--font-body);background:var(--slate-100);color:var(--slate-800);line-height:1.5;min-height:100vh}
+        .header{background:linear-gradient(135deg,var(--slate-900) 0%,var(--slate-800) 50%,var(--slate-700) 100%);color:white;padding:20px 40px;border-bottom:4px solid var(--amber-500);box-shadow:0 4px 20px rgba(0,0,0,0.15);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+        .brand{display:flex;align-items:center;gap:20px}
+        .brand img{height:40px;width:auto}
+        .brand-text h1{font-family:var(--font-display);font-size:22px;font-weight:600;letter-spacing:-0.5px;color:var(--amber-400)}
+        .brand-text .tagline{font-size:11px;color:var(--slate-400);letter-spacing:1.5px;text-transform:uppercase}
+        .header-meta{text-align:right}
+        .header-meta .date-range{font-family:var(--font-display);font-size:18px;color:var(--amber-500);font-weight:500}
+        .header-meta .update-info{font-size:11px;color:var(--slate-400);margin-top:2px}
+        .main-container{display:flex;min-height:calc(100vh - 88px)}
+        .sidebar{width:300px;background:white;border-right:1px solid var(--slate-200);padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:20px;box-shadow:4px 0 12px rgba(0,0,0,0.03)}
+        .filter-section h3{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--slate-800);margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--amber-500);display:flex;align-items:center;gap:8px}
+        .filter-section h3 i{color:var(--amber-500);font-size:13px}
+        .filter-group{margin-bottom:14px}
+        .filter-group label{display:block;font-size:10px;font-weight:700;color:var(--slate-500);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
+        select,input[type="text"],input[type="number"]{width:100%;padding:10px 12px;border:1px solid var(--slate-200);border-radius:6px;font-family:var(--font-body);font-size:13px;color:var(--slate-800);background:white;transition:border-color 0.2s,box-shadow 0.2s}
+        select:focus,input:focus{outline:none;border-color:var(--amber-500);box-shadow:0 0 0 3px var(--amber-100)}
+        .date-range-toggle{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--slate-500);cursor:pointer}
+        .date-range-toggle input[type="checkbox"]{width:auto;accent-color:var(--amber-500)}
+        .date-range-inputs{display:none;gap:8px;margin-top:10px}
+        .date-range-inputs.active{display:flex}
+        .date-range-inputs select{flex:1}
+        .filter-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+        .chip{padding:5px 10px;background:var(--slate-100);border:1px solid var(--slate-200);border-radius:20px;font-size:11px;color:var(--slate-600);cursor:pointer;transition:all 0.2s}
+        .chip:hover{background:var(--slate-200)}
+        .chip.active{background:var(--amber-500);border-color:var(--amber-500);color:white}
+        .btn-reset{width:100%;padding:10px;background:var(--slate-100);border:1px solid var(--slate-300);border-radius:6px;font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--slate-600);cursor:pointer;transition:all 0.2s;margin-top:10px}
+        .btn-reset:hover{background:var(--slate-200)}
+        .content{flex:1;padding:24px;overflow-y:auto}
+        .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:24px}
+        .kpi-card{background:white;border-radius:10px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid var(--slate-200)}
+        .kpi-card .label{font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+        .kpi-card .value{font-family:var(--font-display);font-size:26px;font-weight:600;color:var(--slate-800)}
+        .kpi-card .value.positive{color:var(--emerald-600)}
+        .kpi-card .value.negative{color:var(--rose-600)}
+        .kpi-card .subtext{font-size:11px;color:var(--slate-500);margin-top:4px}
+        .tabs{display:flex;gap:4px;background:var(--slate-200);padding:4px;border-radius:8px;margin-bottom:20px}
+        .tab-btn{flex:1;padding:10px 16px;background:transparent;border:none;border-radius:6px;font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--slate-600);cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+        .tab-btn:hover{color:var(--slate-800)}
+        .tab-btn.active{background:white;color:var(--slate-800);box-shadow:0 2px 4px rgba(0,0,0,0.08)}
+        .tab-btn i{font-size:12px}
+        .panel{display:none}
+        .panel.active{display:block}
+        .chart-container{background:white;border-radius:10px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid var(--slate-200)}
+        .chart-container h4{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--slate-800);margin-bottom:16px;display:flex;align-items:center;gap:10px}
+        .chart-container h4 i{color:var(--amber-500);font-size:14px}
+        .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+        @media(max-width:1200px){.chart-row{grid-template-columns:1fr}}
+        .table-container{background:white;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid var(--slate-200);overflow:hidden}
+        .table-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--slate-200)}
+        .table-header h4{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--slate-800);display:flex;align-items:center;gap:10px}
+        .table-header h4 i{color:var(--amber-500)}
+        .btn-export{padding:8px 14px;background:var(--slate-100);border:1px solid var(--slate-300);border-radius:6px;font-size:12px;font-weight:600;color:var(--slate-600);cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s}
+        .btn-export:hover{background:var(--slate-200)}
+        .data-table{width:100%;border-collapse:collapse}
+        .data-table th{background:var(--slate-50);padding:12px 16px;text-align:left;font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--slate-200);cursor:pointer;white-space:nowrap}
+        .data-table th:hover{background:var(--slate-100)}
+        .data-table th i{margin-left:6px;font-size:10px}
+        .data-table td{padding:12px 16px;border-bottom:1px solid var(--slate-100);font-size:13px}
+        .data-table tr:hover{background:var(--slate-50);cursor:pointer}
+        .data-table .symbol{font-weight:700;color:var(--slate-800)}
+        .data-table .company{font-size:11px;color:var(--slate-500)}
+        .data-table .mono{font-family:'SF Mono','Consolas',monospace;font-size:12px}
+        .data-table .positive{color:var(--emerald-600);font-weight:600}
+        .data-table .negative{color:var(--rose-600);font-weight:600}
+        .badge{display:inline-block;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:700}
+        .badge-stock{background:var(--sky-500);color:white}
+        .badge-etf{background:var(--amber-500);color:white}
+        .badge-success{background:var(--emerald-500);color:white}
+        .badge-fail{background:var(--rose-500);color:white}
+        .table-footer{padding:12px 20px;background:var(--slate-50);border-top:1px solid var(--slate-200);display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--slate-500)}
+        .pagination{display:flex;gap:4px}
+        .pagination button{padding:6px 12px;background:white;border:1px solid var(--slate-300);border-radius:4px;font-size:12px;cursor:pointer;transition:all 0.2s}
+        .pagination button:hover{background:var(--slate-100)}
+        .pagination button.active{background:var(--amber-500);border-color:var(--amber-500);color:white}
+        .pagination button:disabled{opacity:0.5;cursor:not-allowed}
+        .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:200;justify-content:center;align-items:center}
+        .modal-overlay.active{display:flex}
+        .modal{background:white;border-radius:12px;width:90%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+        .modal-header{padding:20px 24px;border-bottom:1px solid var(--slate-200);display:flex;justify-content:space-between;align-items:flex-start}
+        .modal-header .symbol-info h2{font-family:var(--font-display);font-size:28px;font-weight:700;color:var(--slate-800)}
+        .modal-header .symbol-info .company-name{font-size:14px;color:var(--slate-500);margin-top:2px}
+        .modal-close{width:36px;height:36px;border:none;background:var(--slate-100);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--slate-500);transition:all 0.2s}
+        .modal-close:hover{background:var(--slate-200);color:var(--slate-700)}
+        .modal-body{padding:24px}
+        .modal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+        .modal-stat{text-align:center;padding:16px;background:var(--slate-50);border-radius:8px}
+        .modal-stat .label{font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.5px}
+        .modal-stat .value{font-family:var(--font-display);font-size:24px;font-weight:600;margin-top:4px}
+        .result-box{padding:16px;border-radius:8px;margin-top:16px}
+        .result-box.success{background:#f0fdf4;border:1px solid #bbf7d0}
+        .result-box.fail{background:#fef2f2;border:1px solid #fecaca}
+        .result-box .title{font-weight:700;margin-bottom:4px}
+        .result-box.success .title{color:#166534}
+        .result-box.fail .title{color:#991b1b}
+        .result-box .desc{font-size:13px}
+        .result-box.success .desc{color:#14532d}
+        .result-box.fail .desc{color:#7f1d1d}
+        .quadrant-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--slate-200)}
+        .legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--slate-600)}
+        .legend-dot{width:10px;height:10px;border-radius:50%}
+        .legend-dot.q1{background:var(--q1-color)}
+        .legend-dot.q2{background:var(--q2-color)}
+        .legend-dot.q3{background:var(--q3-color)}
+        .legend-dot.q4{background:var(--q4-color)}
+        .disclaimer{margin-top:40px;padding:20px;background:var(--slate-50);border-radius:8px;border:1px solid var(--slate-200)}
+        .disclaimer h5{font-size:11px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+        .disclaimer p{font-size:11px;color:var(--slate-500);line-height:1.6}
+        .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;color:var(--slate-500)}
+        .loading-spinner{width:40px;height:40px;border:3px solid var(--slate-200);border-top-color:var(--amber-500);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @media(max-width:900px){.main-container{flex-direction:column}.sidebar{width:100%;border-right:none;border-bottom:1px solid var(--slate-200)}.header{flex-direction:column;gap:16px;text-align:center}.header-meta{text-align:center}.kpi-row{grid-template-columns:repeat(2,1fr)}}
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="brand">
+            <img src="logo.png" alt="Sapinover Research">
+            <div class="brand-text">
+                <h1>Overnight Alpha Analysis</h1>
+                <div class="tagline">BlueOcean ATS Market Microstructure Research</div>
+            </div>
+        </div>
+        <div class="header-meta">
+            <div class="date-range" id="headerDateRange">Loading...</div>
+            <div class="update-info" id="headerUpdateInfo"></div>
+        </div>
+    </header>
+    
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="filter-section">
+                <h3><i class="fas fa-filter"></i> Filters</h3>
+                <div class="filter-group">
+                    <label>Trading Date</label>
+                    <select id="filterDate"><option value="all">All Days (Aggregate)</option></select>
+                    <label class="date-range-toggle"><input type="checkbox" id="dateRangeToggle"> Custom Date Range</label>
+                    <div class="date-range-inputs" id="dateRangeInputs">
+                        <select id="filterDateStart"></select>
+                        <span style="color:var(--slate-400)">→</span>
+                        <select id="filterDateEnd"></select>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Asset Type</label>
+                    <select id="filterAssetType"><option value="all">All Assets</option><option value="Stock">Stocks</option><option value="ETF">ETFs</option></select>
+                </div>
+                <div class="filter-group" id="sectorFilterGroup">
+                    <label>Sector</label>
+                    <select id="filterSector"><option value="all">All Sectors</option></select>
+                </div>
+                <div class="filter-group" id="etfFilterGroup">
+                    <label>ETF Category</label>
+                    <select id="filterETFCategory"><option value="all">All Categories</option></select>
+                </div>
+                <div class="filter-group">
+                    <label>Leverage</label>
+                    <div class="filter-chips" id="leverageChips">
+                        <span class="chip active" data-value="all">All</span>
+                        <span class="chip" data-value="1x">1x</span>
+                        <span class="chip" data-value="2x">2x</span>
+                        <span class="chip" data-value="3x">3x</span>
+                        <span class="chip" data-value="inverse">Inverse</span>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Alpha Performance</label>
+                    <select id="filterAlpha"><option value="all">All Observations</option><option value="positive">Positive Alpha Only</option><option value="negative">Negative Alpha Only</option></select>
+                </div>
+                <div class="filter-group">
+                    <label>Symbol Search</label>
+                    <input type="text" id="filterSymbol" placeholder="e.g., TSLA, NVDA...">
+                </div>
+                <button class="btn-reset" id="btnReset"><i class="fas fa-undo"></i> Reset All Filters</button>
+            </div>
+            <div class="filter-section">
+                <h3><i class="fas fa-chart-pie"></i> Quick Stats</h3>
+                <div id="quickStats" style="font-size:12px;color:var(--slate-600)">
+                    <div style="margin-bottom:8px"><strong>Showing:</strong> <span id="qsCount">-</span> observations</div>
+                    <div style="margin-bottom:8px"><strong>Notional:</strong> <span id="qsNotional">-</span></div>
+                    <div><strong>Symbols:</strong> <span id="qsSymbols">-</span></div>
+                </div>
+            </div>
+        </aside>
+        
+        <main class="content">
+            <div class="loading" id="loadingState"><div class="loading-spinner"></div><div>Loading data...</div></div>
+            <div id="dashboardContent" style="display:none">
+                <div class="kpi-row">
+                    <div class="kpi-card"><div class="label">Total Notional</div><div class="value" id="kpiNotional">-</div><div class="subtext" id="kpiNotionalSub"></div></div>
+                    <div class="kpi-card"><div class="label">Observations</div><div class="value" id="kpiObs">-</div><div class="subtext" id="kpiObsSub"></div></div>
+                    <div class="kpi-card"><div class="label">Unique Symbols</div><div class="value" id="kpiSymbols">-</div><div class="subtext" id="kpiSymbolsSub"></div></div>
+                    <div class="kpi-card"><div class="label">Continuity Rate</div><div class="value" id="kpiContinuity">-</div><div class="subtext">Overnight price continuation</div></div>
+                    <div class="kpi-card"><div class="label">Median Alpha</div><div class="value" id="kpiAlpha">-</div><div class="subtext">Captured (bps)</div></div>
+                    <div class="kpi-card"><div class="label">Wtd Avg Alpha</div><div class="value" id="kpiWtdAlpha">-</div><div class="subtext">Notional-weighted (bps)</div></div>
+                </div>
+                
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="overview"><i class="fas fa-tachometer-alt"></i> Overview</button>
+                    <button class="tab-btn" data-tab="alpha"><i class="fas fa-chart-line"></i> Alpha Analysis</button>
+                    <button class="tab-btn" data-tab="breakdown"><i class="fas fa-sitemap"></i> Breakdown</button>
+                    <button class="tab-btn" data-tab="explorer"><i class="fas fa-table"></i> Data Explorer</button>
+                </div>
+                
+                <div class="panel active" id="panel-overview">
+                    <div class="chart-container"><h4><i class="fas fa-chart-bar"></i> Daily Volume & Alpha Trend</h4><div id="chartTrend" style="height:350px"></div></div>
+                    <div class="chart-row">
+                        <div class="chart-container"><h4><i class="fas fa-chart-pie"></i> Asset Type Distribution</h4><div id="chartAssetType" style="height:300px"></div></div>
+                        <div class="chart-container"><h4><i class="fas fa-layer-group"></i> Leverage Distribution</h4><div id="chartLeverage" style="height:300px"></div></div>
+                    </div>
+                </div>
+                
+                <div class="panel" id="panel-alpha">
+                    <div class="chart-container">
+                        <h4><i class="fas fa-crosshairs"></i> Alpha Capture Scatter</h4>
+                        <div id="chartScatter" style="height:450px"></div>
+                        <div class="quadrant-legend">
+                            <div class="legend-item"><span class="legend-dot q1"></span> Q1: Gap Up + Positive Capture</div>
+                            <div class="legend-item"><span class="legend-dot q2"></span> Q2: Gap Up + Negative Capture</div>
+                            <div class="legend-item"><span class="legend-dot q3"></span> Q3: Gap Down + Positive Capture</div>
+                            <div class="legend-item"><span class="legend-dot q4"></span> Q4: Gap Down + Negative Capture</div>
+                        </div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-container"><h4><i class="fas fa-chart-area"></i> Captured Alpha Distribution</h4><div id="chartAlphaHist" style="height:300px"></div></div>
+                        <div class="chart-container"><h4><i class="fas fa-check-circle"></i> Continuity by Asset Type</h4><div id="chartContinuity" style="height:300px"></div></div>
+                    </div>
+                </div>
+                
+                <div class="panel" id="panel-breakdown">
+                    <div class="chart-container"><h4><i class="fas fa-th-large"></i> Sector Treemap (by Notional)</h4><div id="chartTreemap" style="height:400px"></div></div>
+                    <div class="chart-row">
+                        <div class="chart-container"><h4><i class="fas fa-trophy"></i> Top 10 Symbols by Notional</h4><div id="chartTop10" style="height:350px"></div></div>
+                        <div class="chart-container"><h4><i class="fas fa-balance-scale"></i> Performance by Leverage</h4><div id="chartLeveragePerf" style="height:350px"></div></div>
+                    </div>
+                </div>
+                
+                <div class="panel" id="panel-explorer">
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h4><i class="fas fa-database"></i> Position Data</h4>
+                            <div class="table-actions"><button class="btn-export" id="btnExportCSV"><i class="fas fa-download"></i> Export CSV</button></div>
+                        </div>
+                        <div style="overflow-x:auto">
+                            <table class="data-table" id="dataTable">
+                                <thead><tr>
+                                    <th data-sort="date">Date <i class="fas fa-sort"></i></th>
+                                    <th data-sort="symbol">Symbol <i class="fas fa-sort"></i></th>
+                                    <th data-sort="asset_type">Type <i class="fas fa-sort"></i></th>
+                                    <th data-sort="sector">Sector <i class="fas fa-sort"></i></th>
+                                    <th data-sort="notional">Notional <i class="fas fa-sort"></i></th>
+                                    <th data-sort="captured_bps">Alpha (bps) <i class="fas fa-sort"></i></th>
+                                    <th data-sort="continuity">Continuity <i class="fas fa-sort"></i></th>
+                                    <th data-sort="leverage">Leverage <i class="fas fa-sort"></i></th>
+                                </tr></thead>
+                                <tbody id="tableBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="table-footer"><span id="tableInfo">Showing 0 of 0</span><div class="pagination" id="pagination"></div></div>
+                    </div>
+                </div>
+                
+                <div class="disclaimer">
+                    <h5>Research Disclaimer</h5>
+                    <p>This analysis constitutes independent research on market microstructure and execution quality. It is not investment advice, and no investment recommendations are made or implied. Past performance does not guarantee future results. The statistics presented are observational and may not be representative of future market conditions. Sapinover LLC is retained by BlueOcean ATS for market microstructure research and receives a flat monthly fee. For investment decisions, consult a registered investment advisor.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="symbol-info"><h2 id="modalSymbol">-</h2><div class="company-name" id="modalCompany">-</div></div>
+                <button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom:16px"><span class="badge" id="modalAssetBadge">-</span><span style="margin-left:8px;font-size:13px;color:var(--slate-500)" id="modalMeta">-</span></div>
+                <div class="modal-stats">
+                    <div class="modal-stat"><div class="label">Notional</div><div class="value" id="modalNotional">-</div></div>
+                    <div class="modal-stat"><div class="label">Captured Alpha</div><div class="value" id="modalAlpha">-</div></div>
+                    <div class="modal-stat"><div class="label">Uncaptured Alpha</div><div class="value" id="modalUncaptured">-</div></div>
+                </div>
+                <div class="result-box" id="modalResult"><div class="title" id="modalResultTitle">-</div><div class="desc" id="modalResultDesc">-</div></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+let RAW_DATA=[],SYMBOLS=[],SECTORS=[],ETF_CATEGORIES=[],METADATA={},FILTERED=[];
+const QUAD_COLORS={Q1:'#ea580c',Q2:'#059669',Q3:'#0284c7',Q4:'#dc2626'};
+const PLOT_LAYOUT={font:{family:'Source Sans 3'},paper_bgcolor:'transparent',plot_bgcolor:'transparent',margin:{t:20,r:20,b:40,l:50}};
+const PLOT_CONFIG={displayModeBar:false,responsive:true};
+let currentSort={key:'notional',asc:false},currentPage=1;
+const PAGE_SIZE=50;
+
+async function loadData(){
+    try{
+        const response=await fetch('data.json');
+        const json=await response.json();
+        METADATA=json.meta;SECTORS=json.sectors;ETF_CATEGORIES=json.etf_categories;SYMBOLS=json.symbols;
+        RAW_DATA=json.data.map(row=>{
+            const sym=SYMBOLS[row[0]];
+            return{symbol:sym[0],company:sym[1],asset_type:sym[2],sector:SECTORS[sym[3]]||'Other',etf_category:ETF_CATEGORIES[sym[4]]||'',leverage:sym[5],date:row[1],notional:row[2],volume:row[3],executions:row[4],uncaptured_bps:row[5],captured_bps:row[6],continuity:row[7],gap_dir:row[8]};
+        });
+        initializeUI();applyFilters();
+        document.getElementById('loadingState').style.display='none';
+        document.getElementById('dashboardContent').style.display='block';
+    }catch(error){
+        console.error('Failed to load data:',error);
+        document.getElementById('loadingState').innerHTML='<div style="color:#dc2626"><i class="fas fa-exclamation-triangle" style="font-size:32px;margin-bottom:16px"></i><div>Failed to load data. Please check that data.json exists.</div></div>';
+    }
+}
+
+function initializeUI(){
+    document.getElementById('headerDateRange').textContent=formatDateShort(METADATA.date_range[0])+' — '+formatDateShort(METADATA.date_range[1]);
+    document.getElementById('headerUpdateInfo').textContent=METADATA.trading_days+' trading days • Updated '+METADATA.generated.split(' ')[0];
+    const dateSelect=document.getElementById('filterDate'),dateStart=document.getElementById('filterDateStart'),dateEnd=document.getElementById('filterDateEnd');
+    METADATA.dates.forEach(d=>{dateSelect.appendChild(new Option(formatDateShort(d),d));dateStart.appendChild(new Option(formatDateShort(d),d));dateEnd.appendChild(new Option(formatDateShort(d),d));});
+    dateEnd.value=METADATA.dates[METADATA.dates.length-1];
+    const sectorSelect=document.getElementById('filterSector');
+    SECTORS.filter(s=>s&&s!=='Other').forEach(s=>sectorSelect.appendChild(new Option(s,s)));
+    const etfSelect=document.getElementById('filterETFCategory');
+    ETF_CATEGORIES.filter(c=>c).forEach(c=>etfSelect.appendChild(new Option(c,c)));
+    setupEventListeners();
+}
+
+function setupEventListeners(){
+    document.getElementById('filterDate').addEventListener('change',applyFilters);
+    document.getElementById('filterAssetType').addEventListener('change',handleAssetTypeChange);
+    document.getElementById('filterSector').addEventListener('change',applyFilters);
+    document.getElementById('filterETFCategory').addEventListener('change',applyFilters);
+    document.getElementById('filterAlpha').addEventListener('change',applyFilters);
+    document.getElementById('filterSymbol').addEventListener('input',debounce(applyFilters,300));
+    document.getElementById('dateRangeToggle').addEventListener('change',function(){
+        document.getElementById('dateRangeInputs').classList.toggle('active',this.checked);
+        document.getElementById('filterDate').disabled=this.checked;applyFilters();
+    });
+    document.getElementById('filterDateStart').addEventListener('change',applyFilters);
+    document.getElementById('filterDateEnd').addEventListener('change',applyFilters);
+    document.querySelectorAll('#leverageChips .chip').forEach(chip=>{
+        chip.addEventListener('click',function(){
+            document.querySelectorAll('#leverageChips .chip').forEach(c=>c.classList.remove('active'));
+            this.classList.add('active');applyFilters();
+        });
+    });
+    document.getElementById('btnReset').addEventListener('click',resetFilters);
+    document.querySelectorAll('.tab-btn').forEach(btn=>{
+        btn.addEventListener('click',function(){
+            const tabId=this.dataset.tab;
+            document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('panel-'+tabId).classList.add('active');
+            window.dispatchEvent(new Event('resize'));
+        });
+    });
+    document.querySelectorAll('.data-table th[data-sort]').forEach(th=>{
+        th.addEventListener('click',function(){
+            const key=this.dataset.sort;
+            if(currentSort.key===key){currentSort.asc=!currentSort.asc;}
+            else{currentSort.key=key;currentSort.asc=key==='symbol'||key==='date';}
+            renderTable();
+        });
+    });
+    document.getElementById('btnExportCSV').addEventListener('click',exportCSV);
+    document.getElementById('modalClose').addEventListener('click',closeModal);
+    document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+}
+
+function handleAssetTypeChange(){
+    const assetType=document.getElementById('filterAssetType').value;
+    document.getElementById('sectorFilterGroup').style.display=(assetType==='ETF')?'none':'block';
+    document.getElementById('etfFilterGroup').style.display=(assetType==='Stock')?'none':'block';
+    applyFilters();
+}
+
+function applyFilters(){
+    const dateRangeEnabled=document.getElementById('dateRangeToggle').checked;
+    const selectedDate=document.getElementById('filterDate').value;
+    const dateStart=document.getElementById('filterDateStart').value;
+    const dateEnd=document.getElementById('filterDateEnd').value;
+    const assetType=document.getElementById('filterAssetType').value;
+    const sector=document.getElementById('filterSector').value;
+    const etfCategory=document.getElementById('filterETFCategory').value;
+    const alphaFilter=document.getElementById('filterAlpha').value;
+    const symbolSearch=document.getElementById('filterSymbol').value.toUpperCase().trim();
+    const leverageChip=document.querySelector('#leverageChips .chip.active').dataset.value;
+    
+    FILTERED=RAW_DATA.filter(row=>{
+        if(dateRangeEnabled){if(row.date<dateStart||row.date>dateEnd)return false;}
+        else if(selectedDate!=='all'){if(row.date!==selectedDate)return false;}
+        if(assetType!=='all'&&row.asset_type!==assetType)return false;
+        if(sector!=='all'&&row.asset_type==='Stock'&&row.sector!==sector)return false;
+        if(etfCategory!=='all'&&row.asset_type==='ETF'&&row.etf_category!==etfCategory)return false;
+        if(leverageChip!=='all'){if(leverageChip==='inverse'){if(!row.leverage.startsWith('-'))return false;}else{if(row.leverage!==leverageChip)return false;}}
+        if(alphaFilter==='positive'&&row.captured_bps<0)return false;
+        if(alphaFilter==='negative'&&row.captured_bps>=0)return false;
+        if(symbolSearch&&!row.symbol.includes(symbolSearch))return false;
+        return true;
+    });
+    currentPage=1;updateDashboard();
+}
+
+function resetFilters(){
+    document.getElementById('filterDate').value='all';
+    document.getElementById('filterDate').disabled=false;
+    document.getElementById('dateRangeToggle').checked=false;
+    document.getElementById('dateRangeInputs').classList.remove('active');
+    document.getElementById('filterDateStart').value=METADATA.dates[0];
+    document.getElementById('filterDateEnd').value=METADATA.dates[METADATA.dates.length-1];
+    document.getElementById('filterAssetType').value='all';
+    document.getElementById('filterSector').value='all';
+    document.getElementById('filterETFCategory').value='all';
+    document.getElementById('filterAlpha').value='all';
+    document.getElementById('filterSymbol').value='';
+    document.querySelectorAll('#leverageChips .chip').forEach(c=>c.classList.remove('active'));
+    document.querySelector('#leverageChips .chip[data-value="all"]').classList.add('active');
+    document.getElementById('sectorFilterGroup').style.display='block';
+    document.getElementById('etfFilterGroup').style.display='block';
+    applyFilters();
+}
+
+function updateDashboard(){updateKPIs();updateQuickStats();renderAllCharts();renderTable();}
+
+function updateKPIs(){
+    const totalNotional=FILTERED.reduce((a,b)=>a+b.notional,0);
+    const totalObs=FILTERED.length;
+    const uniqueSymbols=new Set(FILTERED.map(d=>d.symbol)).size;
+    const wins=FILTERED.filter(d=>d.continuity===1).length;
+    const continuityRate=totalObs>0?(wins/totalObs)*100:0;
+    const alphas=FILTERED.map(d=>d.captured_bps).sort((a,b)=>a-b);
+    const medianAlpha=alphas.length>0?alphas[Math.floor(alphas.length/2)]:0;
+    const wtdAlpha=totalNotional>0?FILTERED.reduce((a,b)=>a+(b.captured_bps*b.notional),0)/totalNotional:0;
+    
+    document.getElementById('kpiNotional').textContent=formatCurrency(totalNotional);
+    document.getElementById('kpiNotionalSub').textContent='Across '+formatNumber(totalObs)+' positions';
+    document.getElementById('kpiObs').textContent=formatNumber(totalObs);
+    document.getElementById('kpiObsSub').textContent=((totalObs/RAW_DATA.length)*100).toFixed(1)+'% of total';
+    document.getElementById('kpiSymbols').textContent=formatNumber(uniqueSymbols);
+    document.getElementById('kpiSymbolsSub').textContent='Unique tickers';
+    const contEl=document.getElementById('kpiContinuity');
+    contEl.textContent=continuityRate.toFixed(1)+'%';
+    contEl.className='value '+(continuityRate>=50?'positive':'negative');
+    const medEl=document.getElementById('kpiAlpha');
+    medEl.textContent=medianAlpha.toFixed(1);
+    medEl.className='value '+(medianAlpha>=0?'positive':'negative');
+    const wtdEl=document.getElementById('kpiWtdAlpha');
+    wtdEl.textContent=wtdAlpha.toFixed(1);
+    wtdEl.className='value '+(wtdAlpha>=0?'positive':'negative');
+}
+
+function updateQuickStats(){
+    document.getElementById('qsCount').textContent=formatNumber(FILTERED.length);
+    document.getElementById('qsNotional').textContent=formatCurrency(FILTERED.reduce((a,b)=>a+b.notional,0));
+    document.getElementById('qsSymbols').textContent=formatNumber(new Set(FILTERED.map(d=>d.symbol)).size);
+}
+
+function renderAllCharts(){renderTrendChart();renderAssetTypeChart();renderLeverageChart();renderScatterChart();renderAlphaHistogram();renderContinuityChart();renderTreemap();renderTop10Chart();renderLeveragePerfChart();}
+
+function renderTrendChart(){
+    const agg={};
+    FILTERED.forEach(d=>{if(!agg[d.date])agg[d.date]={notional:0,wtdAlpha:0,count:0};agg[d.date].notional+=d.notional;agg[d.date].wtdAlpha+=d.captured_bps*d.notional;agg[d.date].count++;});
+    const dates=Object.keys(agg).sort();
+    const notionals=dates.map(d=>agg[d].notional);
+    const alphas=dates.map(d=>agg[d].notional>0?agg[d].wtdAlpha/agg[d].notional:0);
+    const traceBar={x:dates,y:notionals,type:'bar',name:'Notional',marker:{color:'#cbd5e1'},hovertemplate:'%{x}<br>$%{y:,.0f}<extra></extra>'};
+    const traceLine={x:dates,y:alphas,type:'scatter',mode:'lines+markers',name:'Wtd Alpha (bps)',yaxis:'y2',line:{color:'#f59e0b',width:3},marker:{size:8},hovertemplate:'%{x}<br>%{y:.1f} bps<extra></extra>'};
+    const layout={...PLOT_LAYOUT,showlegend:true,legend:{orientation:'h',y:1.1},xaxis:{type:'date',tickformat:'%b %d',gridcolor:'#f1f5f9'},yaxis:{title:'Notional ($)',gridcolor:'#f1f5f9',tickformat:',.0s'},yaxis2:{title:'Alpha (bps)',overlaying:'y',side:'right',gridcolor:'#f1f5f9'},hovermode:'x unified'};
+    Plotly.newPlot('chartTrend',[traceBar,traceLine],layout,PLOT_CONFIG);
+}
+
+function renderAssetTypeChart(){
+    const agg={};FILTERED.forEach(d=>{if(!agg[d.asset_type])agg[d.asset_type]=0;agg[d.asset_type]+=d.notional;});
+    const trace={values:Object.values(agg),labels:Object.keys(agg),type:'pie',hole:0.5,marker:{colors:['#0ea5e9','#f59e0b']},textinfo:'label+percent',hovertemplate:'%{label}<br>$%{value:,.0f}<br>%{percent}<extra></extra>'};
+    Plotly.newPlot('chartAssetType',[trace],{...PLOT_LAYOUT,showlegend:false},PLOT_CONFIG);
+}
+
+function renderLeverageChart(){
+    const order=['1x','2x','3x','-1x','-3x'];
+    const agg={};FILTERED.forEach(d=>{if(!agg[d.leverage])agg[d.leverage]=0;agg[d.leverage]+=d.notional;});
+    const labels=order.filter(l=>agg[l]);
+    const values=labels.map(l=>agg[l]);
+    const colors=labels.map(l=>l.startsWith('-')?'#dc2626':'#10b981');
+    const trace={x:labels,y:values,type:'bar',marker:{color:colors},hovertemplate:'%{x}<br>$%{y:,.0f}<extra></extra>'};
+    Plotly.newPlot('chartLeverage',[trace],{...PLOT_LAYOUT,xaxis:{title:'Leverage Multiple'},yaxis:{title:'Notional ($)',tickformat:',.0s'}},PLOT_CONFIG);
+}
+
+function renderScatterChart(){
+    const getQuadrant=(d)=>{const gapUp=d.gap_dir==='UP';const posCapture=d.captured_bps>=0;if(gapUp&&posCapture)return'Q1';if(gapUp&&!posCapture)return'Q2';if(!gapUp&&posCapture)return'Q3';return'Q4';};
+    const trace={x:FILTERED.map(d=>d.uncaptured_bps),y:FILTERED.map(d=>d.captured_bps),mode:'markers',type:'scatter',marker:{size:FILTERED.map(d=>Math.max(6,Math.min(30,Math.sqrt(d.notional)/500))),color:FILTERED.map(d=>QUAD_COLORS[getQuadrant(d)]),opacity:0.6,line:{width:0.5,color:'white'}},text:FILTERED.map(d=>d.symbol+'<br>'+d.date+'<br>$'+formatCurrency(d.notional)),hoverinfo:'text'};
+    const layout={...PLOT_LAYOUT,xaxis:{title:'Market Gap / Uncaptured Alpha (bps)',zeroline:true,zerolinecolor:'#94a3b8',gridcolor:'#f1f5f9'},yaxis:{title:'Captured Alpha (bps)',zeroline:true,zerolinecolor:'#94a3b8',gridcolor:'#f1f5f9'},shapes:[{type:'line',x0:0,x1:0,y0:-500,y1:500,line:{color:'#94a3b8',width:1}},{type:'line',x0:-500,x1:500,y0:0,y1:0,line:{color:'#94a3b8',width:1}}]};
+    Plotly.newPlot('chartScatter',[trace],layout,PLOT_CONFIG);
+}
+
+function renderAlphaHistogram(){
+    const trace={x:FILTERED.map(d=>d.captured_bps),type:'histogram',nbinsx:50,marker:{color:'#f59e0b'},hovertemplate:'%{x:.0f} bps<br>Count: %{y}<extra></extra>'};
+    Plotly.newPlot('chartAlphaHist',[trace],{...PLOT_LAYOUT,xaxis:{title:'Captured Alpha (bps)',gridcolor:'#f1f5f9'},yaxis:{title:'Count',gridcolor:'#f1f5f9'},bargap:0.05},PLOT_CONFIG);
+}
+
+function renderContinuityChart(){
+    const agg={};FILTERED.forEach(d=>{const key=d.asset_type;if(!agg[key])agg[key]={wins:0,total:0};agg[key].total++;if(d.continuity===1)agg[key].wins++;});
+    const labels=Object.keys(agg);
+    const rates=labels.map(l=>(agg[l].wins/agg[l].total)*100);
+    const colors=rates.map(r=>r>=50?'#10b981':'#f43f5e');
+    const trace={x:labels,y:rates,type:'bar',marker:{color:colors},text:rates.map(r=>r.toFixed(1)+'%'),textposition:'outside',hovertemplate:'%{x}<br>%{y:.1f}%<extra></extra>'};
+    Plotly.newPlot('chartContinuity',[trace],{...PLOT_LAYOUT,xaxis:{title:''},yaxis:{title:'Continuity Rate (%)',range:[0,100],gridcolor:'#f1f5f9'}},PLOT_CONFIG);
+}
+
+function renderTreemap(){
+    const agg={};FILTERED.forEach(d=>{const sector=d.asset_type==='ETF'?(d.etf_category||'Other ETF'):d.sector;if(!agg[sector])agg[sector]=0;agg[sector]+=d.notional;});
+    const sorted=Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,20);
+    const trace={type:'treemap',labels:sorted.map(s=>s[0]),parents:sorted.map(()=>''),values:sorted.map(s=>s[1]),textinfo:'label+value',texttemplate:'%{label}<br>$%{value:,.0s}',hovertemplate:'%{label}<br>$%{value:,.0f}<extra></extra>',marker:{colors:sorted.map((_,i)=>'hsl('+(40+i*8)+', 70%, '+(55+i*2)+'%)')}};
+    Plotly.newPlot('chartTreemap',[trace],{...PLOT_LAYOUT,margin:{t:10,r:10,b:10,l:10}},PLOT_CONFIG);
+}
+
+function renderTop10Chart(){
+    const agg={};FILTERED.forEach(d=>{if(!agg[d.symbol])agg[d.symbol]={notional:0,wtdAlpha:0};agg[d.symbol].notional+=d.notional;agg[d.symbol].wtdAlpha+=d.captured_bps*d.notional;});
+    const sorted=Object.entries(agg).sort((a,b)=>b[1].notional-a[1].notional).slice(0,10);
+    const trace={y:sorted.map(s=>s[0]).reverse(),x:sorted.map(s=>s[1].notional).reverse(),type:'bar',orientation:'h',marker:{color:'#f59e0b'},hovertemplate:'%{y}<br>$%{x:,.0f}<extra></extra>'};
+    Plotly.newPlot('chartTop10',[trace],{...PLOT_LAYOUT,xaxis:{title:'Total Notional ($)',tickformat:',.0s'},yaxis:{title:''},margin:{...PLOT_LAYOUT.margin,l:80}},PLOT_CONFIG);
+}
+
+function renderLeveragePerfChart(){
+    const order=['1x','2x','3x','-1x','-3x'];
+    const agg={};FILTERED.forEach(d=>{if(!agg[d.leverage])agg[d.leverage]={notional:0,wtdAlpha:0,wins:0,total:0};agg[d.leverage].notional+=d.notional;agg[d.leverage].wtdAlpha+=d.captured_bps*d.notional;agg[d.leverage].total++;if(d.continuity===1)agg[d.leverage].wins++;});
+    const labels=order.filter(l=>agg[l]);
+    const alphas=labels.map(l=>agg[l].notional>0?agg[l].wtdAlpha/agg[l].notional:0);
+    const rates=labels.map(l=>(agg[l].wins/agg[l].total)*100);
+    const traceAlpha={x:labels,y:alphas,type:'bar',name:'Wtd Alpha (bps)',marker:{color:'#f59e0b'}};
+    const traceRate={x:labels,y:rates,type:'scatter',mode:'lines+markers',name:'Continuity %',yaxis:'y2',line:{color:'#0ea5e9',width:3},marker:{size:10}};
+    Plotly.newPlot('chartLeveragePerf',[traceAlpha,traceRate],{...PLOT_LAYOUT,showlegend:true,legend:{orientation:'h',y:1.15},xaxis:{title:'Leverage'},yaxis:{title:'Wtd Alpha (bps)'},yaxis2:{title:'Continuity %',overlaying:'y',side:'right',range:[0,100]}},PLOT_CONFIG);
+}
+
+function renderTable(){
+    const sorted=[...FILTERED].sort((a,b)=>{let va=a[currentSort.key];let vb=b[currentSort.key];if(typeof va==='string')return currentSort.asc?va.localeCompare(vb):vb.localeCompare(va);return currentSort.asc?va-vb:vb-va;});
+    const start=(currentPage-1)*PAGE_SIZE;
+    const pageData=sorted.slice(start,start+PAGE_SIZE);
+    const tbody=document.getElementById('tableBody');tbody.innerHTML='';
+    pageData.forEach(d=>{
+        const tr=document.createElement('tr');tr.onclick=()=>showModal(d);
+        const alphaClass=d.captured_bps>=0?'positive':'negative';
+        const contBadge=d.continuity===1?'<span class="badge badge-success">✓</span>':'<span class="badge badge-fail">✗</span>';
+        const typeBadge=d.asset_type==='Stock'?'<span class="badge badge-stock">Stock</span>':'<span class="badge badge-etf">ETF</span>';
+        tr.innerHTML='<td>'+d.date+'</td><td><span class="symbol">'+d.symbol+'</span><div class="company">'+(d.company||'')+'</div></td><td>'+typeBadge+'</td><td>'+(d.asset_type==='Stock'?d.sector:d.etf_category||'-')+'</td><td class="mono">$'+formatNumber(d.notional)+'</td><td class="mono '+alphaClass+'">'+d.captured_bps.toFixed(1)+'</td><td>'+contBadge+'</td><td>'+d.leverage+'</td>';
+        tbody.appendChild(tr);
+    });
+    document.getElementById('tableInfo').textContent='Showing '+(start+1)+'-'+Math.min(start+PAGE_SIZE,sorted.length)+' of '+formatNumber(sorted.length);
+    renderPagination(sorted.length);
+}
+
+function renderPagination(total){
+    const totalPages=Math.ceil(total/PAGE_SIZE);
+    const container=document.getElementById('pagination');container.innerHTML='';
+    if(totalPages<=1)return;
+    const prevBtn=document.createElement('button');prevBtn.innerHTML='<i class="fas fa-chevron-left"></i>';prevBtn.disabled=currentPage===1;prevBtn.onclick=()=>{currentPage--;renderTable();};container.appendChild(prevBtn);
+    const maxButtons=5;let startPage=Math.max(1,currentPage-Math.floor(maxButtons/2));let endPage=Math.min(totalPages,startPage+maxButtons-1);
+    if(endPage-startPage<maxButtons-1)startPage=Math.max(1,endPage-maxButtons+1);
+    for(let i=startPage;i<=endPage;i++){const btn=document.createElement('button');btn.textContent=i;btn.className=i===currentPage?'active':'';btn.onclick=()=>{currentPage=i;renderTable();};container.appendChild(btn);}
+    const nextBtn=document.createElement('button');nextBtn.innerHTML='<i class="fas fa-chevron-right"></i>';nextBtn.disabled=currentPage===totalPages;nextBtn.onclick=()=>{currentPage++;renderTable();};container.appendChild(nextBtn);
+}
+
+function showModal(d){
+    document.getElementById('modalSymbol').textContent=d.symbol;
+    document.getElementById('modalCompany').textContent=d.company||d.symbol;
+    const badge=document.getElementById('modalAssetBadge');badge.textContent=d.asset_type;badge.className='badge '+(d.asset_type==='Stock'?'badge-stock':'badge-etf');
+    document.getElementById('modalMeta').textContent=d.date+' • '+(d.asset_type==='Stock'?d.sector:d.etf_category||'-')+' • '+d.leverage;
+    document.getElementById('modalNotional').textContent='$'+formatNumber(d.notional);
+    const alphaEl=document.getElementById('modalAlpha');alphaEl.textContent=d.captured_bps.toFixed(1)+' bps';alphaEl.style.color=d.captured_bps>=0?'#059669':'#e11d48';
+    const uncapEl=document.getElementById('modalUncaptured');uncapEl.textContent=d.uncaptured_bps.toFixed(1)+' bps';uncapEl.style.color=d.uncaptured_bps>=0?'#059669':'#e11d48';
+    const resultBox=document.getElementById('modalResult');const resultTitle=document.getElementById('modalResultTitle');const resultDesc=document.getElementById('modalResultDesc');
+    if(d.continuity===1){resultBox.className='result-box success';resultTitle.textContent='✓ POSITIVE CONTINUITY';resultDesc.textContent='This position successfully captured alpha. The overnight gap '+(d.gap_dir==='UP'?'up':'down')+' continued in the expected direction.';}
+    else{resultBox.className='result-box fail';resultTitle.textContent='✗ NEGATIVE DRIFT';resultDesc.textContent='The overnight premium dissipated by market open. Gap direction: '+d.gap_dir+'.';}
+    document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal(){document.getElementById('modalOverlay').classList.remove('active');}
+
+function exportCSV(){
+    const headers=['Date','Symbol','Company','Asset Type','Sector','ETF Category','Leverage','Notional','Captured Alpha (bps)','Uncaptured Alpha (bps)','Continuity','Gap Direction'];
+    const rows=FILTERED.map(d=>[d.date,d.symbol,d.company||'',d.asset_type,d.sector,d.etf_category,d.leverage,d.notional,d.captured_bps,d.uncaptured_bps,d.continuity===1?'Yes':'No',d.gap_dir]);
+    const csv=[headers,...rows].map(row=>row.map(cell=>'"'+cell+'"').join(',')).join('\n');
+    const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='sapinover_overnight_alpha_'+new Date().toISOString().split('T')[0]+'.csv';a.click();URL.revokeObjectURL(url);
+}
+
+function formatCurrency(value){if(value>=1e9)return'$'+(value/1e9).toFixed(2)+'B';if(value>=1e6)return'$'+(value/1e6).toFixed(2)+'M';if(value>=1e3)return'$'+(value/1e3).toFixed(1)+'K';return'$'+value.toFixed(0);}
+function formatNumber(value){return value.toLocaleString('en-US',{maximumFractionDigits:0});}
+function formatDateShort(dateStr){const date=new Date(dateStr+'T00:00:00');return date.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+function debounce(func,wait){let timeout;return function(...args){clearTimeout(timeout);timeout=setTimeout(()=>func.apply(this,args),wait);};}
+
+document.addEventListener('DOMContentLoaded',loadData);
+</script>
+</body>
+</html>
