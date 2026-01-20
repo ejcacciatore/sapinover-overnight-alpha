@@ -1,0 +1,2548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sapinover Overnight Analysis Dashboard</title>
+    
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            /* Sapinover Professional Branding */
+            --primary-navy: #0A2463;
+            --primary-blue: #1E40AF;
+            --light-blue: #3B82F6;
+            --lightest-blue: #DBEAFE;
+            --accent-blue: #60A5FA;
+            
+            /* Quadrant Colors */
+            --q1-color: #10B981; /* Green - Aligned Winners */
+            --q2-color: #F59E0B; /* Amber - Contrarian Capture */
+            --q3-color: #EF4444; /* Red - Aligned Losers */
+            --q4-color: #8B5CF6; /* Purple - Leaked Alpha */
+            
+            /* UI Colors */
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --text-light: #9CA3AF;
+            --border-color: #E5E7EB;
+            --background: #F9FAFB;
+            --white: #FFFFFF;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-navy) 0%, var(--primary-blue) 100%);
+            color: var(--white);
+            padding: 30px 40px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .header-content {
+            max-width: 1920px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .header .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+        
+        .header-meta {
+            text-align: right;
+            font-size: 13px;
+            opacity: 0.85;
+        }
+        
+        /* Tab Navigation */
+        .tab-navigation {
+            background: var(--white);
+            border-bottom: 2px solid var(--border-color);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .tab-nav-container {
+            max-width: 1920px;
+            margin: 0 auto;
+            display: flex;
+            overflow-x: auto;
+        }
+        
+        .tab-button {
+            padding: 16px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tab-button:hover {
+            background: var(--lightest-blue);
+            color: var(--primary-blue);
+        }
+        
+        .tab-button.active {
+            color: var(--primary-blue);
+            border-bottom-color: var(--primary-blue);
+            background: var(--lightest-blue);
+        }
+        
+        .tab-button i {
+            font-size: 16px;
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Filter Panel */
+        .filter-panel {
+            background: var(--white);
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+        
+        .filter-panel h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--primary-navy);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .filter-group select,
+        .filter-group input {
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+        
+        /* Toggle Buttons */
+        .toggle-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .toggle-btn {
+            padding: 8px 16px;
+            background: var(--background);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+        }
+        
+        .toggle-btn:hover {
+            background: var(--lightest-blue);
+            border-color: var(--primary-blue);
+        }
+        
+        .toggle-btn.active {
+            background: var(--primary-blue);
+            color: var(--white);
+            border-color: var(--primary-blue);
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: var(--white);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary-blue);
+        }
+        
+        .stat-card.success {
+            border-left-color: var(--success);
+        }
+        
+        .stat-card.warning {
+            border-left-color: var(--warning);
+        }
+        
+        .stat-card.danger {
+            border-left-color: var(--danger);
+        }
+        
+        .stat-card .label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-navy);
+        }
+        
+        .stat-card .change {
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        
+        .positive { color: var(--success); }
+        .negative { color: var(--danger); }
+        
+        /* Chart Container */
+        .chart-container {
+            background: var(--white);
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+        
+        .chart-container h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--primary-navy);
+        }
+        
+        .chart-container .chart {
+            min-height: 400px;
+        }
+        
+        /* Data Table */
+        .data-table-container {
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        
+        .table-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .table-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-navy);
+        }
+        
+        .table-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .search-box {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            width: 250px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table thead {
+            background: var(--background);
+            position: sticky;
+            top: 0;
+        }
+        
+        .data-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .data-table th:hover {
+            background: var(--lightest-blue);
+        }
+        
+        .data-table th i {
+            margin-left: 4px;
+            font-size: 10px;
+        }
+        
+        .data-table td {
+            padding: 12px 16px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .data-table tbody tr:hover {
+            background: var(--lightest-blue);
+            cursor: pointer;
+        }
+        
+        /* Pagination */
+        .pagination {
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .pagination-info {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .pagination-btn {
+            padding: 8px 12px;
+            background: var(--background);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--primary-blue);
+            color: var(--white);
+            border-color: var(--primary-blue);
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pagination-btn.active {
+            background: var(--primary-blue);
+            color: var(--white);
+            border-color: var(--primary-blue);
+        }
+        
+        /* Info Box */
+        .info-box {
+            background: var(--lightest-blue);
+            border-left: 4px solid var(--primary-blue);
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        .info-box.warning {
+            background: #FEF3C7;
+            border-left-color: var(--warning);
+        }
+        
+        .info-box strong {
+            color: var(--primary-navy);
+        }
+        
+        /* Quadrant Legend */
+        .quadrant-legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        
+        .quadrant-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        
+        .quadrant-legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        
+        .q1-bg { background: var(--q1-color); }
+        .q2-bg { background: var(--q2-color); }
+        .q3-bg { background: var(--q3-color); }
+        .q4-bg { background: var(--q4-color); }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.2s;
+        }
+        
+        .modal-content {
+            background-color: var(--white);
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 800px;
+            box-shadow: var(--shadow-lg);
+            animation: slideDown 0.3s;
+        }
+        
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-navy);
+        }
+        
+        .close {
+            font-size: 28px;
+            font-weight: 300;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .close:hover {
+            color: var(--danger);
+        }
+        
+        .modal-body {
+            padding: 24px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .detail-item .label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+        
+        .detail-item .value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-navy);
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        .spinner {
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-blue);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            background: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            background: var(--primary-navy);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+        
+        .btn-secondary {
+            background: var(--background);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--border-color);
+            transform: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tab-button {
+                font-size: 12px;
+                padding: 12px 16px;
+            }
+        }
+        
+        /* Utility Classes */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mb-16 { margin-bottom: 16px; }
+        .mb-24 { margin-bottom: 24px; }
+        .mt-16 { margin-top: 16px; }
+        .font-bold { font-weight: 600; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1>Sapinover Overnight Analysis Dashboard</h1>
+                <div class="subtitle">Independent Research on Overnight Equity Trading & Alpha Capture</div>
+            </div>
+            <div class="header-meta">
+                <div id="dateRangeDisplay">Loading...</div>
+                <div id="dataGenerated">Generated: --</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+        <div class="tab-nav-container">
+            <button class="tab-button active" onclick="switchTab('tab1')">
+                <i class="fas fa-chart-line"></i> Executive Summary
+            </button>
+            <button class="tab-button" onclick="switchTab('tab2')">
+                <i class="fas fa-calendar-day"></i> Daily Analysis
+            </button>
+            <button class="tab-button" onclick="switchTab('tab3')">
+                <i class="fas fa-chart-bar"></i> Aggregate Analysis
+            </button>
+            <button class="tab-button" onclick="switchTab('tab4')">
+                <i class="fas fa-pie-chart"></i> Distribution & Composition
+            </button>
+            <button class="tab-button" onclick="switchTab('tab5')">
+                <i class="fas fa-bullseye"></i> Alpha Metrics
+            </button>
+            <button class="tab-button" onclick="switchTab('tab6')">
+                <i class="fas fa-project-diagram"></i> Correlation & Advanced
+            </button>
+            <button class="tab-button" onclick="switchTab('tab7')">
+                <i class="fas fa-table"></i> Raw Data Explorer
+            </button>
+            <button class="tab-button" onclick="switchTab('tab8')">
+                <i class="fas fa-book"></i> Methodology & Compliance
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Tab 1: Executive Summary -->
+        <div id="tab1" class="tab-content active">
+            <div class="filter-panel">
+                <h3><i class="fas fa-filter"></i> Global Filters</h3>
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label>Date Range</label>
+                        <select id="dateRangeFilter">
+                            <option value="all">Full Dataset</option>
+                            <option value="last7">Last 7 Trading Days</option>
+                            <option value="last30">Last 30 Calendar Days</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Start Date</label>
+                        <input type="date" id="startDateFilter">
+                    </div>
+                    <div class="filter-group">
+                        <label>End Date</label>
+                        <input type="date" id="endDateFilter">
+                    </div>
+                    <div class="filter-group">
+                        <label>Asset Type</label>
+                        <select id="assetTypeFilter">
+                            <option value="all">All Assets</option>
+                            <option value="Stock">Stocks Only</option>
+                            <option value="ETF">ETFs Only</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Sector</label>
+                        <select id="sectorFilter">
+                            <option value="all">All Sectors</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>ETF Category</label>
+                        <select id="etfCategoryFilter">
+                            <option value="all">All Categories</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-16">
+                    <button class="btn" onclick="applyFilters()">
+                        <i class="fas fa-sync"></i> Apply Filters
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetFilters()">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="label">Total Notional</div>
+                    <div class="value" id="totalNotional">$0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Total Observations</div>
+                    <div class="value" id="totalObservations">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Trading Days</div>
+                    <div class="value" id="tradingDays">0</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="label">Avg Overnight Gap</div>
+                    <div class="value" id="avgOvernightGap">0 bps</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="label">Avg Timing Differential</div>
+                    <div class="value" id="avgTimingDiff">0 bps</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Price Continuity Rate</div>
+                    <div class="value" id="continuityRate">0%</div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Daily Notional Trend</h3>
+                <div id="dailyNotionalChart" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Daily Average Alpha Trend</h3>
+                <div id="dailyAlphaChart" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Top 10 Symbols by Notional</h3>
+                <div id="topSymbolsChart" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Overnight Price Continuity Rate by Asset Type</h3>
+                <div id="continuityByAssetChart" class="chart"></div>
+            </div>
+        </div>
+        
+        <!-- Tab 2: Daily Analysis -->
+        <div id="tab2" class="tab-content">
+            <div class="filter-panel">
+                <h3><i class="fas fa-calendar"></i> Select Trading Day</h3>
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label>Trading Date</label>
+                        <select id="dailyDateSelector">
+                            <option value="">Select a date...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stats-grid" id="dailyStats">
+                <div class="stat-card">
+                    <div class="label">Daily Notional</div>
+                    <div class="value" id="dailyNotional">$0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Daily Observations</div>
+                    <div class="value" id="dailyObservations">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Daily Volume</div>
+                    <div class="value" id="dailyVolume">0</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="label">Avg Alpha (Day)</div>
+                    <div class="value" id="dailyAvgAlpha">0 bps</div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Notional by Sector (Selected Day)</h3>
+                <div id="dailySectorChart" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Alpha Distribution (Selected Day)</h3>
+                <div id="dailyAlphaDistChart" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Quadrant Breakdown (Selected Day)</h3>
+                <div id="dailyQuadrantChart" class="chart"></div>
+            </div>
+            
+            <div class="data-table-container">
+                <div class="table-header">
+                    <h3>Position Details (Selected Day)</h3>
+                    <div class="table-controls">
+                        <input type="text" class="search-box" id="dailySearchBox" placeholder="Search symbols...">
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th onclick="sortDailyTable('symbol')">Symbol <i class="fas fa-sort"></i></th>
+                                <th onclick="sortDailyTable('notional')">Notional <i class="fas fa-sort"></i></th>
+                                <th onclick="sortDailyTable('volume')">Volume <i class="fas fa-sort"></i></th>
+                                <th onclick="sortDailyTable('alpha')">Alpha (bps) <i class="fas fa-sort"></i></th>
+                                <th onclick="sortDailyTable('gap')">Reference Gap <i class="fas fa-sort"></i></th>
+                                <th onclick="sortDailyTable('sector')">Sector <i class="fas fa-sort"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyTableBody">
+                            <tr><td colspan="6" class="text-center">Select a trading day to view positions</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab 3: Aggregate Analysis -->
+        <div id="tab3" class="tab-content">
+            <div class="info-box">
+                <strong>Aggregate View:</strong> This tab shows symbol-level aggregated performance across the selected date range. Each symbol appears once with notional-weighted averages.
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="label">Unique Symbols</div>
+                    <div class="value" id="uniqueSymbols">0</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="label">Weighted Avg Alpha</div>
+                    <div class="value" id="weightedAvgAlpha">0 bps</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Top Symbol Notional</div>
+                    <div class="value" id="topSymbolNotional">$0</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="label">Avg Days Traded</div>
+                    <div class="value" id="avgDaysTraded">0</div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Daily Aggregate Notional Trend</h3>
+                <div id="aggregateNotionalTrend" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Top 20 Performers by Weighted Alpha</h3>
+                <div id="topPerformersChart" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Symbol Trading Frequency Distribution</h3>
+                <div id="tradingFrequencyChart" class="chart"></div>
+            </div>
+            
+            <div class="data-table-container">
+                <div class="table-header">
+                    <h3>Symbol-Level Aggregated Performance</h3>
+                    <div class="table-controls">
+                        <input type="text" class="search-box" id="aggregateSearchBox" placeholder="Search symbols...">
+                        <button class="btn btn-secondary" onclick="exportAggregateData()">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th onclick="sortAggregateTable('symbol')">Symbol <i class="fas fa-sort"></i></th>
+                                <th onclick="sortAggregateTable('name')">Company <i class="fas fa-sort"></i></th>
+                                <th onclick="sortAggregateTable('type')">Type <i class="fas fa-sort"></i></th>
+                                <th onclick="sortAggregateTable('notional')">Total Notional <i class="fas fa-sort"></i></th>
+                                <th onclick="sortAggregateTable('volume')">Total Volume <i class="fas fa-sort"></i></th>
+                                <th onclick="sortAggregateTable('days')">Trading Days <i class="fas fa-sort"></i></th>
+                                <th onclick="sortAggregateTable('alpha')">Wtd Avg Alpha <i class="fas fa-sort"></i></th>
+                                <th onclick="sortAggregateTable('gap')">Wtd Ref Gap <i class="fas fa-sort"></i></th>
+                                <th onclick="sortAggregateTable('continuity')">Continuity % <i class="fas fa-sort"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody id="aggregateTableBody">
+                            <tr><td colspan="9" class="text-center">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="aggregatePagination"></div>
+            </div>
+        </div>
+        
+        <!-- Tab 4: Distribution & Composition -->
+        <div id="tab4" class="tab-content">
+            <div class="chart-container">
+                <h3>Asset Type Distribution by Notional</h3>
+                <div id="assetDistributionChart" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Sector Breakdown (Stocks Only)</h3>
+                <div id="sectorBreakdownChart" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>ETF Category Analysis</h3>
+                <div id="etfCategoryChart" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Position Size Distribution</h3>
+                <div id="sizeDistributionChart" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Notional Spread by Size Bucket</h3>
+                <div id="notionalBySize" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Leverage Type Distribution (ETFs)</h3>
+                <div id="leverageDistChart" class="chart"></div>
+            </div>
+        </div>
+        
+        <!-- Tab 5: Alpha Metrics -->
+        <div id="tab5" class="tab-content">
+            <div class="filter-panel">
+                <h3><i class="fas fa-sliders-h"></i> Quadrant Mode</h3>
+                <div class="toggle-group">
+                    <button class="toggle-btn active" id="quadrantZero" onclick="setQuadrantMode('zero')">
+                        Zero-Based (Academic)
+                    </button>
+                    <button class="toggle-btn" id="quadrantThreshold" onclick="setQuadrantMode('threshold')">
+                        Threshold-Based (±10/±5 bps)
+                    </button>
+                </div>
+            </div>
+            
+            <div class="quadrant-legend">
+                <div class="quadrant-legend-item">
+                    <div class="quadrant-legend-color q1-bg"></div>
+                    <span>Q1: Aligned Winners (Ref>0, Alpha>0)</span>
+                </div>
+                <div class="quadrant-legend-item">
+                    <div class="quadrant-legend-color q2-bg"></div>
+                    <span>Q2: Contrarian Capture (Ref<0, Alpha>0)</span>
+                </div>
+                <div class="quadrant-legend-item">
+                    <div class="quadrant-legend-color q3-bg"></div>
+                    <span>Q3: Aligned Losers (Ref<0, Alpha<0)</span>
+                </div>
+                <div class="quadrant-legend-item">
+                    <div class="quadrant-legend-color q4-bg"></div>
+                    <span>Q4: Leaked Alpha (Ref>0, Alpha<0)</span>
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card" style="border-left-color: var(--q1-color);">
+                    <div class="label">Q1 Positions</div>
+                    <div class="value" id="q1Count">0</div>
+                </div>
+                <div class="stat-card" style="border-left-color: var(--q2-color);">
+                    <div class="label">Q2 Positions</div>
+                    <div class="value" id="q2Count">0</div>
+                </div>
+                <div class="stat-card" style="border-left-color: var(--q3-color);">
+                    <div class="label">Q3 Positions</div>
+                    <div class="value" id="q3Count">0</div>
+                </div>
+                <div class="stat-card" style="border-left-color: var(--q4-color);">
+                    <div class="label">Q4 Positions</div>
+                    <div class="value" id="q4Count">0</div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Quadrant Scatter Plot: Reference Gap vs Timing Differential</h3>
+                <div id="quadrantScatter" class="chart" style="min-height: 600px;"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Quadrant Performance Summary</h3>
+                <div id="quadrantPerformance" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Overnight Price Continuity Rate by Quadrant</h3>
+                <div id="continuityByQuadrant" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Alpha Waterfall: Available → Captured → Leaked</h3>
+                <div id="alphaWaterfall" class="chart"></div>
+            </div>
+        </div>
+        
+        <!-- Tab 6: Correlation & Advanced -->
+        <div id="tab6" class="tab-content">
+            <div class="chart-container">
+                <h3>Correlation Matrix: Key Metrics</h3>
+                <div id="correlationHeatmap" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Notional vs Alpha Scatter</h3>
+                <div id="notionalAlphaScatter" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Alpha Distribution by Sector (Box Plot)</h3>
+                <div id="alphaBoxPlot" class="chart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Alpha Distribution Histogram</h3>
+                <div id="alphaHistogram" class="chart"></div>
+            </div>
+        </div>
+        
+        <!-- Tab 7: Raw Data Explorer -->
+        <div id="tab7" class="tab-content">
+            <div class="info-box">
+                <strong>Raw Data View:</strong> This tab shows all daily observations. Use filters to narrow down results. Click any row for detailed information.
+            </div>
+            
+            <div class="filter-panel">
+                <h3><i class="fas fa-search"></i> Advanced Filters</h3>
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label>Search Symbol</label>
+                        <input type="text" id="rawSymbolSearch" placeholder="Enter symbol...">
+                    </div>
+                    <div class="filter-group">
+                        <label>Quadrant</label>
+                        <select id="rawQuadrantFilter">
+                            <option value="all">All Quadrants</option>
+                            <option value="Q1">Q1 - Aligned Winners</option>
+                            <option value="Q2">Q2 - Contrarian Capture</option>
+                            <option value="Q3">Q3 - Aligned Losers</option>
+                            <option value="Q4">Q4 - Leaked Alpha</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Min Alpha (bps)</label>
+                        <input type="number" id="rawMinAlpha" placeholder="e.g., -100">
+                    </div>
+                    <div class="filter-group">
+                        <label>Max Alpha (bps)</label>
+                        <input type="number" id="rawMaxAlpha" placeholder="e.g., 100">
+                    </div>
+                    <div class="filter-group">
+                        <label>Min Notional</label>
+                        <input type="number" id="rawMinNotional" placeholder="e.g., 50000">
+                    </div>
+                </div>
+                <div class="mt-16">
+                    <button class="btn" onclick="applyRawFilters()">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetRawFilters()">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportRawData()">
+                        <i class="fas fa-download"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+            
+            <div class="data-table-container">
+                <div class="table-header">
+                    <h3>All Observations (<span id="rawDataCount">0</span> records)</h3>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th onclick="sortRawTable('symbol')">Symbol <i class="fas fa-sort"></i></th>
+                                <th onclick="sortRawTable('date')">Date <i class="fas fa-sort"></i></th>
+                                <th onclick="sortRawTable('notional')">Notional <i class="fas fa-sort"></i></th>
+                                <th onclick="sortRawTable('volume')">Volume <i class="fas fa-sort"></i></th>
+                                <th onclick="sortRawTable('executions')">Execs <i class="fas fa-sort"></i></th>
+                                <th onclick="sortRawTable('refGap')">Ref Gap (bps) <i class="fas fa-sort"></i></th>
+                                <th onclick="sortRawTable('alpha')">Alpha (bps) <i class="fas fa-sort"></i></th>
+                                <th onclick="sortRawTable('continuity')">Continuity <i class="fas fa-sort"></i></th>
+                                <th>Quadrant</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rawTableBody">
+                            <tr><td colspan="9" class="text-center">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="rawPagination"></div>
+            </div>
+        </div>
+        
+        <!-- Tab 8: Methodology & Compliance -->
+        <div id="tab8" class="tab-content">
+            <div class="chart-container">
+                <h3>Terminology & Definitions</h3>
+                <div style="line-height: 1.8;">
+                    <p><strong>Overnight Price Continuity Rate:</strong> The percentage of observations where the direction of the overnight gap (from prior close to next open) matches the direction of the total overnight movement (from prior close to next close). This metric measures directional consistency in overnight price movements.</p>
+                    
+                    <p class="mt-16"><strong>Observed Price Differential:</strong> The measured difference in basis points between various price points in the overnight trading interval. This includes reference gaps and timing differentials.</p>
+                    
+                    <p class="mt-16"><strong>Reference Gap (bps):</strong> The overnight price movement from the prior day's close to the next day's open, expressed in basis points. Calculated as: ((Next_Open - Prior_Close) / Prior_Close) × 10,000.</p>
+                    
+                    <p class="mt-16"><strong>Timing Differential (bps):</strong> The alpha captured by the execution, measured as the difference between the VWAP execution price and the optimal reference point. This represents the value added (or leaked) through positioning relative to the overnight price interval.</p>
+                    
+                    <p class="mt-16"><strong>Total Overnight Gap (bps):</strong> The complete overnight price movement from prior close to next close, expressed in basis points. Calculated as: ((Next_Close - Prior_Close) / Prior_Close) × 10,000.</p>
+                    
+                    <p class="mt-16"><strong>Directional Consistency:</strong> A boolean indicator showing whether the position's gap direction (UP/DOWN) aligned with the direction of the total overnight gap. True indicates alignment.</p>
+                    
+                    <p class="mt-16"><strong>Quadrant Classification:</strong></p>
+                    <ul style="margin-left: 24px; margin-top: 8px;">
+                        <li><strong>Q1 (Aligned Winners):</strong> Positive reference gap AND positive timing differential</li>
+                        <li><strong>Q2 (Contrarian Capture):</strong> Negative reference gap AND positive timing differential</li>
+                        <li><strong>Q3 (Aligned Losers):</strong> Negative reference gap AND negative timing differential</li>
+                        <li><strong>Q4 (Leaked Alpha):</strong> Positive reference gap AND negative timing differential</li>
+                    </ul>
+                    
+                    <p class="mt-16"><strong>Notional-Weighted Average:</strong> For symbol-level aggregation, metrics are weighted by the dollar notional value of each observation. Calculated as: Σ(metric × notional) / Σ(notional).</p>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Calculation Methodologies</h3>
+                <div style="line-height: 1.8;">
+                    <p><strong>Data Sources:</strong> All market data is sourced from the BOATS (BlueOcean ATS Trading System) daily exports. Symbol metadata, including sector classifications and market capitalizations, is enriched using the yfinance API.</p>
+                    
+                    <p class="mt-16"><strong>Symbol Aggregation:</strong> When viewing symbol-level performance across multiple trading days, all metrics are aggregated using notional-weighted averaging. This ensures larger positions have proportionally greater influence on the calculated statistics.</p>
+                    
+                    <p class="mt-16"><strong>Quadrant Thresholds:</strong></p>
+                    <ul style="margin-left: 24px; margin-top: 8px;">
+                        <li><strong>Zero-Based Mode:</strong> Quadrants are defined by the zero axis (Reference Gap = 0, Timing Differential = 0)</li>
+                        <li><strong>Threshold Mode:</strong> Filters near-zero positions using ±10 bps for Reference Gap and ±5 bps for Timing Differential</li>
+                    </ul>
+                    
+                    <p class="mt-16"><strong>Statistical Treatment:</strong> Outliers are identified during data processing but retained in the analysis for completeness. The dashboard allows filtering by performance thresholds to focus on specific ranges.</p>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Disclaimers & Compliance</h3>
+                <div style="line-height: 1.8;">
+                    <p><strong>Independent Research:</strong> This analysis is conducted by Sapinover LLC, an independent research firm. While the data analyzed originates from BlueOcean ATS, Sapinover LLC maintains complete analytical independence and editorial control over all findings and conclusions.</p>
+                    
+                    <p class="mt-16"><strong>Not Investment Advice:</strong> The information presented in this dashboard is for informational and analytical purposes only. It does not constitute investment advice, recommendations, or offers to buy or sell any securities. Past performance does not guarantee future results.</p>
+                    
+                    <p class="mt-16"><strong>Data Accuracy:</strong> While every effort has been made to ensure data accuracy, Sapinover LLC makes no warranties regarding the completeness or accuracy of the information presented. Users should verify all critical information independently.</p>
+                    
+                    <p class="mt-16"><strong>Terminology:</strong> All terminology used in this dashboard has been carefully selected to comply with securities regulations and avoid implications of performance guarantees or investment recommendations.</p>
+                    
+                    <p class="mt-16"><strong>Academic Framework:</strong> The analytical methodology follows academic research standards, including the framework established by Lou, Polk & Skouras (2019) for measuring overnight gaps and alpha capture in equity markets.</p>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>About Sapinover LLC</h3>
+                <div style="line-height: 1.8;">
+                    <p>Sapinover LLC is an independent research firm specializing in market microstructure analysis, with particular expertise in overnight equity trading and alpha capture strategies. Founded by former buy-side quantitative traders, the firm bridges academic research and institutional practice.</p>
+                    
+                    <p class="mt-16">Our research focuses on understanding the mechanics of overnight trading, measuring captured versus uncaptured alpha in overnight sessions, and analyzing market structure evolution. We serve institutional asset managers, broker-dealers, and the academic community with rigorous, compliance-safe analysis.</p>
+                    
+                    <p class="mt-16"><strong>Data Period:</strong> <span id="aboutDataPeriod">--</span></p>
+                    <p><strong>Total Observations Analyzed:</strong> <span id="aboutTotalObs">--</span></p>
+                    <p><strong>Dashboard Generated:</strong> <span id="aboutGenerated">--</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for Position Details -->
+    <div id="positionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Position Details</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="detail-grid" id="modalDetails">
+                    <!-- Details will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Embed JSON data
+        const DASHBOARD_DATA = null; // Will be populated
+        
+        // Global state
+        let currentData = null;
+        let filteredData = null;
+        let aggregatedData = null;
+        let quadrantMode = 'zero';
+        let currentTab = 'tab1';
+        
+        // Pagination state
+        let currentPage = 1;
+        let rowsPerPage = 50;
+        
+        // Load data from external JSON file
+        async function loadData() {
+            try {
+                const response = await fetch('BlueOcean_Dashboard_20251201_20260116.json');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error loading data:', error);
+                return null;
+            }
+        }
+        
+        // Initialize dashboard
+        async function initDashboard() {
+            const data = await loadData();
+            if (!data) {
+                alert('Error loading dashboard data. Please ensure the JSON file is in the same directory.');
+                return;
+            }
+            
+            currentData = data;
+            filteredData = processData(data);
+            
+            // Initialize filters
+            populateFilters(data);
+            
+            // Set date range in header
+            document.getElementById('dateRangeDisplay').textContent = 
+                `${data.meta.date_range[0]} to ${data.meta.date_range[1]} (${data.meta.trading_days} trading days)`;
+            document.getElementById('dataGenerated').textContent = 
+                `Generated: ${data.meta.generated}`;
+            
+            // Populate about section
+            document.getElementById('aboutDataPeriod').textContent = 
+                `${data.meta.date_range[0]} to ${data.meta.date_range[1]}`;
+            document.getElementById('aboutTotalObs').textContent = 
+                data.meta.total_observations.toLocaleString();
+            document.getElementById('aboutGenerated').textContent = 
+                data.meta.generated;
+            
+            // Populate daily date selector
+            const dailyDateSelector = document.getElementById('dailyDateSelector');
+            data.meta.dates.forEach(date => {
+                const option = document.createElement('option');
+                option.value = date;
+                option.textContent = date;
+                dailyDateSelector.appendChild(option);
+            });
+            
+            // Set default date filters
+            document.getElementById('startDateFilter').value = data.meta.date_range[0];
+            document.getElementById('endDateFilter').value = data.meta.date_range[1];
+            
+            // Initial render
+            renderDashboard();
+        }
+        
+        // Process raw data into usable format
+        function processData(data) {
+            const processed = data.data.map(row => {
+                const symbolInfo = data.symbols[row[0]];
+                const sectorIdx = symbolInfo[3];
+                const etfCatIdx = symbolInfo[4];
+                
+                return {
+                    symbolIdx: row[0],
+                    symbol: symbolInfo[0],
+                    companyName: symbolInfo[1],
+                    assetType: symbolInfo[2],
+                    sector: data.sectors[sectorIdx],
+                    etfCategory: symbolInfo[2] === 'ETF' && etfCatIdx > 0 ? data.etf_categories[etfCatIdx] : '',
+                    leverageMultiple: symbolInfo[5],
+                    tradeDate: row[1],
+                    notional: row[2],
+                    volume: row[3],
+                    executions: row[4],
+                    referenceGap: row[5],
+                    timingDifferential: row[6],
+                    directionalConsistency: row[7],
+                    gapDirection: row[8]
+                };
+            });
+            
+            return processed;
+        }
+        
+        // Populate filter dropdowns
+        function populateFilters(data) {
+            // Sectors
+            const sectorFilter = document.getElementById('sectorFilter');
+            data.sectors.forEach(sector => {
+                if (sector !== 'Unknown') {
+                    const option = document.createElement('option');
+                    option.value = sector;
+                    option.textContent = sector;
+                    sectorFilter.appendChild(option);
+                }
+            });
+            
+            // ETF Categories
+            const etfCategoryFilter = document.getElementById('etfCategoryFilter');
+            data.etf_categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                etfCategoryFilter.appendChild(option);
+            });
+        }
+        
+        // Apply global filters
+        function applyFilters() {
+            const dateRange = document.getElementById('dateRangeFilter').value;
+            const assetType = document.getElementById('assetTypeFilter').value;
+            const sector = document.getElementById('sectorFilter').value;
+            const etfCategory = document.getElementById('etfCategoryFilter').value;
+            
+            let startDate = document.getElementById('startDateFilter').value;
+            let endDate = document.getElementById('endDateFilter').value;
+            
+            // Handle date range presets
+            if (dateRange === 'last7') {
+                const dates = currentData.meta.dates;
+                startDate = dates[Math.max(0, dates.length - 7)];
+                endDate = dates[dates.length - 1];
+            } else if (dateRange === 'last30') {
+                const end = new Date(currentData.meta.date_range[1]);
+                const start = new Date(end);
+                start.setDate(start.getDate() - 30);
+                startDate = start.toISOString().split('T')[0];
+                endDate = end.toISOString().split('T')[0];
+            }
+            
+            // Filter data
+            filteredData = processData(currentData).filter(row => {
+                if (startDate && row.tradeDate < startDate) return false;
+                if (endDate && row.tradeDate > endDate) return false;
+                if (assetType !== 'all' && row.assetType !== assetType) return false;
+                if (sector !== 'all' && row.sector !== sector) return false;
+                if (etfCategory !== 'all' && row.etfCategory !== etfCategory) return false;
+                return true;
+            });
+            
+            renderDashboard();
+        }
+        
+        // Reset filters
+        function resetFilters() {
+            document.getElementById('dateRangeFilter').value = 'all';
+            document.getElementById('assetTypeFilter').value = 'all';
+            document.getElementById('sectorFilter').value = 'all';
+            document.getElementById('etfCategoryFilter').value = 'all';
+            document.getElementById('startDateFilter').value = currentData.meta.date_range[0];
+            document.getElementById('endDateFilter').value = currentData.meta.date_range[1];
+            
+            filteredData = processData(currentData);
+            renderDashboard();
+        }
+        
+        // Calculate quadrant
+        function getQuadrant(refGap, timingDiff, mode = 'zero') {
+            if (mode === 'threshold') {
+                const refThreshold = 10;
+                const timingThreshold = 5;
+                
+                if (Math.abs(refGap) < refThreshold || Math.abs(timingDiff) < timingThreshold) {
+                    return 'Neutral';
+                }
+            }
+            
+            if (refGap >= 0 && timingDiff >= 0) return 'Q1';
+            if (refGap < 0 && timingDiff >= 0) return 'Q2';
+            if (refGap < 0 && timingDiff < 0) return 'Q3';
+            if (refGap >= 0 && timingDiff < 0) return 'Q4';
+            return 'Neutral';
+        }
+        
+        // Aggregate data by symbol
+        function aggregateBySymbol(data) {
+            const symbolMap = {};
+            
+            data.forEach(row => {
+                if (!symbolMap[row.symbol]) {
+                    symbolMap[row.symbol] = {
+                        symbol: row.symbol,
+                        companyName: row.companyName,
+                        assetType: row.assetType,
+                        sector: row.sector,
+                        etfCategory: row.etfCategory,
+                        leverageMultiple: row.leverageMultiple,
+                        totalNotional: 0,
+                        totalVolume: 0,
+                        totalExecutions: 0,
+                        tradingDays: 0,
+                        weightedAlpha: 0,
+                        weightedRefGap: 0,
+                        weightedTotalGap: 0,
+                        continuityCount: 0,
+                        observations: []
+                    };
+                }
+                
+                const sym = symbolMap[row.symbol];
+                sym.totalNotional += row.notional;
+                sym.totalVolume += row.volume;
+                sym.totalExecutions += row.executions;
+                sym.tradingDays++;
+                sym.weightedAlpha += row.timingDifferential * row.notional;
+                sym.weightedRefGap += row.referenceGap * row.notional;
+                if (row.directionalConsistency) sym.continuityCount++;
+                sym.observations.push(row);
+            });
+            
+            // Calculate weighted averages
+            Object.values(symbolMap).forEach(sym => {
+                sym.weightedAlpha = sym.totalNotional > 0 ? sym.weightedAlpha / sym.totalNotional : 0;
+                sym.weightedRefGap = sym.totalNotional > 0 ? sym.weightedRefGap / sym.totalNotional : 0;
+                sym.continuityRate = sym.tradingDays > 0 ? (sym.continuityCount / sym.tradingDays) * 100 : 0;
+                sym.avgNotionalPerDay = sym.totalNotional / sym.tradingDays;
+            });
+            
+            return Object.values(symbolMap);
+        }
+        
+        // Render dashboard based on current tab
+        function renderDashboard() {
+            if (currentTab === 'tab1') {
+                renderExecutiveSummary();
+            } else if (currentTab === 'tab3') {
+                renderAggregateAnalysis();
+            } else if (currentTab === 'tab4') {
+                renderDistribution();
+            } else if (currentTab === 'tab5') {
+                renderAlphaMetrics();
+            } else if (currentTab === 'tab6') {
+                renderCorrelation();
+            } else if (currentTab === 'tab7') {
+                renderRawData();
+            }
+        }
+        
+        // Tab 1: Executive Summary
+        function renderExecutiveSummary() {
+            const data = filteredData;
+            
+            // Calculate stats
+            const totalNotional = data.reduce((sum, row) => sum + row.notional, 0);
+            const totalObservations = data.length;
+            const uniqueDates = [...new Set(data.map(row => row.tradeDate))].length;
+            const avgRefGap = data.reduce((sum, row) => sum + row.referenceGap, 0) / totalObservations;
+            const avgTimingDiff = data.reduce((sum, row) => sum + row.timingDifferential, 0) / totalObservations;
+            const continuityCount = data.filter(row => row.directionalConsistency).length;
+            const continuityRate = (continuityCount / totalObservations) * 100;
+            
+            // Update stats cards
+            document.getElementById('totalNotional').textContent = formatCurrency(totalNotional);
+            document.getElementById('totalObservations').textContent = totalObservations.toLocaleString();
+            document.getElementById('tradingDays').textContent = uniqueDates;
+            document.getElementById('avgOvernightGap').textContent = avgRefGap.toFixed(2) + ' bps';
+            document.getElementById('avgTimingDiff').textContent = avgTimingDiff.toFixed(2) + ' bps';
+            document.getElementById('continuityRate').textContent = continuityRate.toFixed(1) + '%';
+            
+            // Daily notional trend
+            const dailyData = {};
+            data.forEach(row => {
+                if (!dailyData[row.tradeDate]) {
+                    dailyData[row.tradeDate] = { notional: 0, alpha: 0, count: 0 };
+                }
+                dailyData[row.tradeDate].notional += row.notional;
+                dailyData[row.tradeDate].alpha += row.timingDifferential;
+                dailyData[row.tradeDate].count++;
+            });
+            
+            const dates = Object.keys(dailyData).sort();
+            const notionals = dates.map(d => dailyData[d].notional);
+            const avgAlphas = dates.map(d => dailyData[d].alpha / dailyData[d].count);
+            
+            Plotly.newPlot('dailyNotionalChart', [{
+                x: dates,
+                y: notionals,
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#1E40AF', width: 2 },
+                marker: { size: 6 }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Trade Date' },
+                yaxis: { title: 'Total Notional ($)' },
+                hovermode: 'closest'
+            }, { responsive: true });
+            
+            // Daily alpha trend
+            Plotly.newPlot('dailyAlphaChart', [{
+                x: dates,
+                y: avgAlphas,
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#10B981', width: 2 },
+                marker: { size: 6 }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Trade Date' },
+                yaxis: { title: 'Average Alpha (bps)' },
+                hovermode: 'closest'
+            }, { responsive: true });
+            
+            // Top symbols
+            const symbolTotals = {};
+            data.forEach(row => {
+                if (!symbolTotals[row.symbol]) {
+                    symbolTotals[row.symbol] = 0;
+                }
+                symbolTotals[row.symbol] += row.notional;
+            });
+            
+            const topSymbols = Object.entries(symbolTotals)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            Plotly.newPlot('topSymbolsChart', [{
+                x: topSymbols.map(s => s[1]),
+                y: topSymbols.map(s => s[0]),
+                type: 'bar',
+                orientation: 'h',
+                marker: { color: '#3B82F6' }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 100 },
+                xaxis: { title: 'Total Notional ($)' },
+                yaxis: { autorange: 'reversed' }
+            }, { responsive: true });
+            
+            // Continuity by asset type
+            const assetStats = {};
+            data.forEach(row => {
+                if (!assetStats[row.assetType]) {
+                    assetStats[row.assetType] = { total: 0, continuity: 0 };
+                }
+                assetStats[row.assetType].total++;
+                if (row.directionalConsistency) {
+                    assetStats[row.assetType].continuity++;
+                }
+            });
+            
+            const assetTypes = Object.keys(assetStats);
+            const continuityRates = assetTypes.map(type => 
+                (assetStats[type].continuity / assetStats[type].total) * 100
+            );
+            
+            Plotly.newPlot('continuityByAssetChart', [{
+                x: assetTypes,
+                y: continuityRates,
+                type: 'bar',
+                marker: { color: '#F59E0B' }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Asset Type' },
+                yaxis: { title: 'Continuity Rate (%)' }
+            }, { responsive: true });
+        }
+        
+        // Tab 3: Aggregate Analysis
+        function renderAggregateAnalysis() {
+            aggregatedData = aggregateBySymbol(filteredData);
+            
+            // Stats
+            const totalSymbols = aggregatedData.length;
+            const weightedAlpha = aggregatedData.reduce((sum, sym) => sum + sym.weightedAlpha * sym.totalNotional, 0) /
+                                 aggregatedData.reduce((sum, sym) => sum + sym.totalNotional, 0);
+            const topSymbol = aggregatedData.sort((a, b) => b.totalNotional - a.totalNotional)[0];
+            const avgDays = aggregatedData.reduce((sum, sym) => sum + sym.tradingDays, 0) / totalSymbols;
+            
+            document.getElementById('uniqueSymbols').textContent = totalSymbols.toLocaleString();
+            document.getElementById('weightedAvgAlpha').textContent = weightedAlpha.toFixed(2) + ' bps';
+            document.getElementById('topSymbolNotional').textContent = formatCurrency(topSymbol.totalNotional);
+            document.getElementById('avgDaysTraded').textContent = avgDays.toFixed(1);
+            
+            // Aggregate notional trend
+            const dailyData = {};
+            filteredData.forEach(row => {
+                if (!dailyData[row.tradeDate]) {
+                    dailyData[row.tradeDate] = 0;
+                }
+                dailyData[row.tradeDate] += row.notional;
+            });
+            
+            const dates = Object.keys(dailyData).sort();
+            const notionals = dates.map(d => dailyData[d]);
+            
+            Plotly.newPlot('aggregateNotionalTrend', [{
+                x: dates,
+                y: notionals,
+                type: 'scatter',
+                mode: 'lines+markers',
+                fill: 'tozeroy',
+                line: { color: '#1E40AF', width: 2 },
+                marker: { size: 6 }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Trade Date' },
+                yaxis: { title: 'Aggregate Notional ($)' }
+            }, { responsive: true });
+            
+            // Top performers
+            const topPerformers = [...aggregatedData]
+                .filter(sym => sym.tradingDays >= 3) // At least 3 days
+                .sort((a, b) => b.weightedAlpha - a.weightedAlpha)
+                .slice(0, 20);
+            
+            Plotly.newPlot('topPerformersChart', [{
+                x: topPerformers.map(s => s.weightedAlpha),
+                y: topPerformers.map(s => s.symbol),
+                type: 'bar',
+                orientation: 'h',
+                marker: { 
+                    color: topPerformers.map(s => s.weightedAlpha >= 0 ? '#10B981' : '#EF4444')
+                }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 100 },
+                xaxis: { title: 'Weighted Average Alpha (bps)' },
+                yaxis: { autorange: 'reversed' }
+            }, { responsive: true });
+            
+            // Trading frequency
+            const freqBuckets = { '1-5': 0, '6-10': 0, '11-15': 0, '16-20': 0, '21+': 0 };
+            aggregatedData.forEach(sym => {
+                if (sym.tradingDays <= 5) freqBuckets['1-5']++;
+                else if (sym.tradingDays <= 10) freqBuckets['6-10']++;
+                else if (sym.tradingDays <= 15) freqBuckets['11-15']++;
+                else if (sym.tradingDays <= 20) freqBuckets['16-20']++;
+                else freqBuckets['21+']++;
+            });
+            
+            Plotly.newPlot('tradingFrequencyChart', [{
+                x: Object.keys(freqBuckets),
+                y: Object.values(freqBuckets),
+                type: 'bar',
+                marker: { color: '#3B82F6' }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Trading Days' },
+                yaxis: { title: 'Number of Symbols' }
+            }, { responsive: true });
+            
+            // Render table
+            renderAggregateTable();
+        }
+        
+        // Render aggregate table
+        function renderAggregateTable(page = 1) {
+            const tbody = document.getElementById('aggregateTableBody');
+            const searchTerm = document.getElementById('aggregateSearchBox')?.value.toLowerCase() || '';
+            
+            let data = [...aggregatedData];
+            
+            // Filter by search
+            if (searchTerm) {
+                data = data.filter(row => 
+                    row.symbol.toLowerCase().includes(searchTerm) ||
+                    row.companyName.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            // Pagination
+            const startIdx = (page - 1) * rowsPerPage;
+            const endIdx = startIdx + rowsPerPage;
+            const pageData = data.slice(startIdx, endIdx);
+            
+            // Render rows
+            tbody.innerHTML = '';
+            pageData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${row.symbol}</strong></td>
+                    <td>${row.companyName}</td>
+                    <td>${row.assetType}</td>
+                    <td>${formatCurrency(row.totalNotional)}</td>
+                    <td>${row.totalVolume.toLocaleString()}</td>
+                    <td>${row.tradingDays}</td>
+                    <td class="${row.weightedAlpha >= 0 ? 'positive' : 'negative'}">
+                        ${row.weightedAlpha.toFixed(2)}
+                    </td>
+                    <td class="${row.weightedRefGap >= 0 ? 'positive' : 'negative'}">
+                        ${row.weightedRefGap.toFixed(2)}
+                    </td>
+                    <td>${row.continuityRate.toFixed(1)}%</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Pagination controls
+            renderPagination('aggregatePagination', data.length, page, (newPage) => {
+                renderAggregateTable(newPage);
+            });
+        }
+        
+        // Tab 4: Distribution
+        function renderDistribution() {
+            const data = filteredData;
+            
+            // Asset distribution
+            const assetDist = {};
+            data.forEach(row => {
+                if (!assetDist[row.assetType]) assetDist[row.assetType] = 0;
+                assetDist[row.assetType] += row.notional;
+            });
+            
+            Plotly.newPlot('assetDistributionChart', [{
+                values: Object.values(assetDist),
+                labels: Object.keys(assetDist),
+                type: 'pie',
+                marker: {
+                    colors: ['#1E40AF', '#10B981', '#F59E0B']
+                }
+            }], {
+                margin: { t: 20, r: 20, b: 20, l: 20 }
+            }, { responsive: true });
+            
+            // Sector breakdown (stocks only)
+            const stockData = data.filter(row => row.assetType === 'Stock');
+            const sectorDist = {};
+            stockData.forEach(row => {
+                if (!sectorDist[row.sector]) sectorDist[row.sector] = 0;
+                sectorDist[row.sector] += row.notional;
+            });
+            
+            const sortedSectors = Object.entries(sectorDist)
+                .sort((a, b) => b[1] - a[1]);
+            
+            Plotly.newPlot('sectorBreakdownChart', [{
+                x: sortedSectors.map(s => s[1]),
+                y: sortedSectors.map(s => s[0]),
+                type: 'bar',
+                orientation: 'h',
+                marker: { color: '#3B82F6' }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 150 },
+                xaxis: { title: 'Total Notional ($)' },
+                yaxis: { autorange: 'reversed' }
+            }, { responsive: true });
+            
+            // ETF categories
+            const etfData = data.filter(row => row.assetType === 'ETF' && row.etfCategory);
+            const etfCatDist = {};
+            etfData.forEach(row => {
+                if (!etfCatDist[row.etfCategory]) etfCatDist[row.etfCategory] = 0;
+                etfCatDist[row.etfCategory] += row.notional;
+            });
+            
+            const sortedETFCats = Object.entries(etfCatDist)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 15);
+            
+            Plotly.newPlot('etfCategoryChart', [{
+                x: sortedETFCats.map(s => s[1]),
+                y: sortedETFCats.map(s => s[0]),
+                type: 'bar',
+                orientation: 'h',
+                marker: { color: '#10B981' }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 200 },
+                xaxis: { title: 'Total Notional ($)' },
+                yaxis: { autorange: 'reversed' }
+            }, { responsive: true });
+            
+            // Size distribution
+            const sizeBuckets = {
+                '<$100K': 0,
+                '$100K-$500K': 0,
+                '$500K-$1M': 0,
+                '$1M-$5M': 0,
+                '>$5M': 0
+            };
+            
+            data.forEach(row => {
+                if (row.notional < 100000) sizeBuckets['<$100K']++;
+                else if (row.notional < 500000) sizeBuckets['$100K-$500K']++;
+                else if (row.notional < 1000000) sizeBuckets['$500K-$1M']++;
+                else if (row.notional < 5000000) sizeBuckets['$1M-$5M']++;
+                else sizeBuckets['>$5M']++;
+            });
+            
+            Plotly.newPlot('sizeDistributionChart', [{
+                x: Object.keys(sizeBuckets),
+                y: Object.values(sizeBuckets),
+                type: 'bar',
+                marker: { color: '#F59E0B' }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Position Size' },
+                yaxis: { title: 'Count' }
+            }, { responsive: true });
+            
+            // Notional by size
+            const sizeNotional = {
+                '<$100K': 0,
+                '$100K-$500K': 0,
+                '$500K-$1M': 0,
+                '$1M-$5M': 0,
+                '>$5M': 0
+            };
+            
+            data.forEach(row => {
+                if (row.notional < 100000) sizeNotional['<$100K'] += row.notional;
+                else if (row.notional < 500000) sizeNotional['$100K-$500K'] += row.notional;
+                else if (row.notional < 1000000) sizeNotional['$500K-$1M'] += row.notional;
+                else if (row.notional < 5000000) sizeNotional['$1M-$5M'] += row.notional;
+                else sizeNotional['>$5M'] += row.notional;
+            });
+            
+            Plotly.newPlot('notionalBySize', [{
+                x: Object.keys(sizeNotional),
+                y: Object.values(sizeNotional),
+                type: 'bar',
+                marker: { color: '#8B5CF6' }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Position Size' },
+                yaxis: { title: 'Total Notional ($)' }
+            }, { responsive: true });
+            
+            // Leverage distribution
+            const leverageDist = {};
+            etfData.forEach(row => {
+                if (!leverageDist[row.leverageMultiple]) leverageDist[row.leverageMultiple] = 0;
+                leverageDist[row.leverageMultiple] += row.notional;
+            });
+            
+            Plotly.newPlot('leverageDistChart', [{
+                values: Object.values(leverageDist),
+                labels: Object.keys(leverageDist),
+                type: 'pie',
+                marker: {
+                    colors: ['#1E40AF', '#F59E0B', '#EF4444']
+                }
+            }], {
+                margin: { t: 20, r: 20, b: 20, l: 20 }
+            }, { responsive: true });
+        }
+        
+        // Tab 5: Alpha Metrics
+        function renderAlphaMetrics() {
+            const data = filteredData;
+            
+            // Calculate quadrants
+            const quadrants = { Q1: [], Q2: [], Q3: [], Q4: [], Neutral: [] };
+            data.forEach(row => {
+                const q = getQuadrant(row.referenceGap, row.timingDifferential, quadrantMode);
+                quadrants[q].push(row);
+            });
+            
+            // Update counts
+            document.getElementById('q1Count').textContent = quadrants.Q1.length.toLocaleString();
+            document.getElementById('q2Count').textContent = quadrants.Q2.length.toLocaleString();
+            document.getElementById('q3Count').textContent = quadrants.Q3.length.toLocaleString();
+            document.getElementById('q4Count').textContent = quadrants.Q4.length.toLocaleString();
+            
+            // Quadrant scatter
+            const colors = {
+                'Q1': '#10B981',
+                'Q2': '#F59E0B',
+                'Q3': '#EF4444',
+                'Q4': '#8B5CF6'
+            };
+            
+            const traces = Object.entries(quadrants)
+                .filter(([q]) => q !== 'Neutral')
+                .map(([q, rows]) => ({
+                    x: rows.map(r => r.referenceGap),
+                    y: rows.map(r => r.timingDifferential),
+                    mode: 'markers',
+                    type: 'scatter',
+                    name: q,
+                    marker: {
+                        color: colors[q],
+                        size: rows.map(r => Math.log(r.notional) / 2),
+                        opacity: 0.6
+                    },
+                    text: rows.map(r => `${r.symbol}<br>Notional: ${formatCurrency(r.notional)}<br>Date: ${r.tradeDate}`)
+                }));
+            
+            Plotly.newPlot('quadrantScatter', traces, {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Reference Gap (bps)', zeroline: true, zerolinecolor: '#999' },
+                yaxis: { title: 'Timing Differential (bps)', zeroline: true, zerolinecolor: '#999' },
+                hovermode: 'closest'
+            }, { responsive: true });
+            
+            // Quadrant performance
+            const qPerf = Object.entries(quadrants)
+                .filter(([q]) => q !== 'Neutral')
+                .map(([q, rows]) => {
+                    const avgAlpha = rows.reduce((sum, r) => sum + r.timingDifferential, 0) / rows.length;
+                    return { quadrant: q, avgAlpha, count: rows.length };
+                });
+            
+            Plotly.newPlot('quadrantPerformance', [{
+                x: qPerf.map(q => q.quadrant),
+                y: qPerf.map(q => q.avgAlpha),
+                type: 'bar',
+                marker: {
+                    color: qPerf.map(q => colors[q.quadrant])
+                },
+                text: qPerf.map(q => `n=${q.count}`),
+                textposition: 'outside'
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Quadrant' },
+                yaxis: { title: 'Average Alpha (bps)' }
+            }, { responsive: true });
+            
+            // Continuity by quadrant
+            const qContinuity = Object.entries(quadrants)
+                .filter(([q]) => q !== 'Neutral')
+                .map(([q, rows]) => {
+                    const continuityRate = (rows.filter(r => r.directionalConsistency).length / rows.length) * 100;
+                    return { quadrant: q, continuityRate };
+                });
+            
+            Plotly.newPlot('continuityByQuadrant', [{
+                x: qContinuity.map(q => q.quadrant),
+                y: qContinuity.map(q => q.continuityRate),
+                type: 'bar',
+                marker: {
+                    color: qContinuity.map(q => colors[q.quadrant])
+                }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Quadrant' },
+                yaxis: { title: 'Continuity Rate (%)' }
+            }, { responsive: true });
+            
+            // Alpha waterfall
+            const totalRefGap = data.reduce((sum, r) => sum + Math.abs(r.referenceGap) * r.notional, 0) / 
+                               data.reduce((sum, r) => sum + r.notional, 0);
+            const totalTimingDiff = data.reduce((sum, r) => sum + r.timingDifferential * r.notional, 0) / 
+                                   data.reduce((sum, r) => sum + r.notional, 0);
+            const leaked = totalRefGap - Math.abs(totalTimingDiff);
+            
+            Plotly.newPlot('alphaWaterfall', [{
+                x: ['Available Alpha', 'Captured Alpha', 'Leaked Alpha', 'Net Alpha'],
+                y: [totalRefGap, totalTimingDiff, -leaked, totalTimingDiff],
+                type: 'waterfall',
+                orientation: 'v',
+                marker: {
+                    color: ['#3B82F6', '#10B981', '#EF4444', '#F59E0B']
+                }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                yaxis: { title: 'Basis Points' }
+            }, { responsive: true });
+        }
+        
+        // Tab 6: Correlation & Advanced
+        function renderCorrelation() {
+            const data = filteredData;
+            
+            // Correlation matrix
+            const metrics = {
+                'Notional': data.map(r => r.notional),
+                'Volume': data.map(r => r.volume),
+                'Ref Gap': data.map(r => r.referenceGap),
+                'Alpha': data.map(r => r.timingDifferential),
+                'Executions': data.map(r => r.executions)
+            };
+            
+            const metricNames = Object.keys(metrics);
+            const corrMatrix = [];
+            
+            metricNames.forEach(m1 => {
+                const row = [];
+                metricNames.forEach(m2 => {
+                    row.push(calculateCorrelation(metrics[m1], metrics[m2]));
+                });
+                corrMatrix.push(row);
+            });
+            
+            Plotly.newPlot('correlationHeatmap', [{
+                z: corrMatrix,
+                x: metricNames,
+                y: metricNames,
+                type: 'heatmap',
+                colorscale: 'RdBu',
+                zmid: 0,
+                text: corrMatrix.map(row => row.map(v => v.toFixed(2))),
+                texttemplate: '%{text}',
+                textfont: { size: 12 }
+            }], {
+                margin: { t: 40, r: 40, b: 80, l: 100 }
+            }, { responsive: true });
+            
+            // Notional vs Alpha scatter
+            const sectorColors = {};
+            const uniqueSectors = [...new Set(data.map(r => r.sector))];
+            const colorPalette = ['#1E40AF', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
+            uniqueSectors.forEach((sector, i) => {
+                sectorColors[sector] = colorPalette[i % colorPalette.length];
+            });
+            
+            const scatterTraces = uniqueSectors.map(sector => {
+                const sectorData = data.filter(r => r.sector === sector);
+                return {
+                    x: sectorData.map(r => r.notional),
+                    y: sectorData.map(r => r.timingDifferential),
+                    mode: 'markers',
+                    type: 'scatter',
+                    name: sector,
+                    marker: {
+                        color: sectorColors[sector],
+                        size: 6,
+                        opacity: 0.6
+                    }
+                };
+            });
+            
+            Plotly.newPlot('notionalAlphaScatter', scatterTraces, {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Notional ($)', type: 'log' },
+                yaxis: { title: 'Alpha (bps)' },
+                hovermode: 'closest'
+            }, { responsive: true });
+            
+            // Box plot by sector
+            const boxTraces = uniqueSectors.map(sector => {
+                const sectorData = data.filter(r => r.sector === sector);
+                return {
+                    y: sectorData.map(r => r.timingDifferential),
+                    type: 'box',
+                    name: sector,
+                    marker: { color: sectorColors[sector] }
+                };
+            });
+            
+            Plotly.newPlot('alphaBoxPlot', boxTraces, {
+                margin: { t: 20, r: 20, b: 100, l: 80 },
+                yaxis: { title: 'Alpha (bps)' }
+            }, { responsive: true });
+            
+            // Alpha histogram
+            Plotly.newPlot('alphaHistogram', [{
+                x: data.map(r => r.timingDifferential),
+                type: 'histogram',
+                nbinsx: 50,
+                marker: { color: '#3B82F6' }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Alpha (bps)' },
+                yaxis: { title: 'Frequency' }
+            }, { responsive: true });
+        }
+        
+        // Tab 7: Raw Data
+        function renderRawData(page = 1) {
+            const tbody = document.getElementById('rawTableBody');
+            
+            // Apply filters
+            let data = applyRawFiltersInternal();
+            
+            document.getElementById('rawDataCount').textContent = data.length.toLocaleString();
+            
+            // Pagination
+            const startIdx = (page - 1) * rowsPerPage;
+            const endIdx = startIdx + rowsPerPage;
+            const pageData = data.slice(startIdx, endIdx);
+            
+            // Render rows
+            tbody.innerHTML = '';
+            pageData.forEach(row => {
+                const quadrant = getQuadrant(row.referenceGap, row.timingDifferential, 'zero');
+                const tr = document.createElement('tr');
+                tr.onclick = () => showPositionDetails(row);
+                tr.innerHTML = `
+                    <td><strong>${row.symbol}</strong></td>
+                    <td>${row.tradeDate}</td>
+                    <td>${formatCurrency(row.notional)}</td>
+                    <td>${row.volume.toLocaleString()}</td>
+                    <td>${row.executions}</td>
+                    <td class="${row.referenceGap >= 0 ? 'positive' : 'negative'}">
+                        ${row.referenceGap.toFixed(2)}
+                    </td>
+                    <td class="${row.timingDifferential >= 0 ? 'positive' : 'negative'}">
+                        ${row.timingDifferential.toFixed(2)}
+                    </td>
+                    <td>${row.directionalConsistency ? '✓' : '✗'}</td>
+                    <td><span style="color: ${getQuadrantColor(quadrant)}">${quadrant}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Pagination
+            renderPagination('rawPagination', data.length, page, (newPage) => {
+                renderRawData(newPage);
+            });
+        }
+        
+        // Apply raw filters
+        function applyRawFiltersInternal() {
+            let data = [...filteredData];
+            
+            const symbolSearch = document.getElementById('rawSymbolSearch')?.value.toLowerCase();
+            const quadrantFilter = document.getElementById('rawQuadrantFilter')?.value;
+            const minAlpha = parseFloat(document.getElementById('rawMinAlpha')?.value);
+            const maxAlpha = parseFloat(document.getElementById('rawMaxAlpha')?.value);
+            const minNotional = parseFloat(document.getElementById('rawMinNotional')?.value);
+            
+            if (symbolSearch) {
+                data = data.filter(row => row.symbol.toLowerCase().includes(symbolSearch));
+            }
+            
+            if (quadrantFilter && quadrantFilter !== 'all') {
+                data = data.filter(row => {
+                    const q = getQuadrant(row.referenceGap, row.timingDifferential, 'zero');
+                    return q === quadrantFilter;
+                });
+            }
+            
+            if (!isNaN(minAlpha)) {
+                data = data.filter(row => row.timingDifferential >= minAlpha);
+            }
+            
+            if (!isNaN(maxAlpha)) {
+                data = data.filter(row => row.timingDifferential <= maxAlpha);
+            }
+            
+            if (!isNaN(minNotional)) {
+                data = data.filter(row => row.notional >= minNotional);
+            }
+            
+            return data;
+        }
+        
+        function applyRawFilters() {
+            renderRawData(1);
+        }
+        
+        function resetRawFilters() {
+            document.getElementById('rawSymbolSearch').value = '';
+            document.getElementById('rawQuadrantFilter').value = 'all';
+            document.getElementById('rawMinAlpha').value = '';
+            document.getElementById('rawMaxAlpha').value = '';
+            document.getElementById('rawMinNotional').value = '';
+            renderRawData(1);
+        }
+        
+        // Pagination helper
+        function renderPagination(containerId, totalRows, currentPage, onPageChange) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            const totalPages = Math.ceil(totalRows / rowsPerPage);
+            
+            let html = `
+                <div class="pagination-info">
+                    Showing ${((currentPage - 1) * rowsPerPage) + 1} to ${Math.min(currentPage * rowsPerPage, totalRows)} of ${totalRows.toLocaleString()} records
+                </div>
+                <div class="pagination-controls">
+                    <button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} 
+                        onclick="(${onPageChange})(1)">First</button>
+                    <button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} 
+                        onclick="(${onPageChange})(${currentPage - 1})">Previous</button>
+            `;
+            
+            // Page numbers
+            const maxPageButtons = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+            
+            if (endPage - startPage < maxPageButtons - 1) {
+                startPage = Math.max(1, endPage - maxPageButtons + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                html += `
+                    <button class="pagination-btn ${i === currentPage ? 'active' : ''}" 
+                        onclick="(${onPageChange})(${i})">${i}</button>
+                `;
+            }
+            
+            html += `
+                    <button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} 
+                        onclick="(${onPageChange})(${currentPage + 1})">Next</button>
+                    <button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} 
+                        onclick="(${onPageChange})(${totalPages})">Last</button>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        // Utility functions
+        function formatCurrency(value) {
+            if (value >= 1000000000) {
+                return '$' + (value / 1000000000).toFixed(2) + 'B';
+            } else if (value >= 1000000) {
+                return '$' + (value / 1000000).toFixed(2) + 'M';
+            } else if (value >= 1000) {
+                return '$' + (value / 1000).toFixed(2) + 'K';
+            }
+            return '$' + value.toFixed(2);
+        }
+        
+        function calculateCorrelation(x, y) {
+            const n = x.length;
+            const sumX = x.reduce((a, b) => a + b, 0);
+            const sumY = y.reduce((a, b) => a + b, 0);
+            const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+            const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+            const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
+            
+            const numerator = n * sumXY - sumX * sumY;
+            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+            
+            return denominator === 0 ? 0 : numerator / denominator;
+        }
+        
+        function getQuadrantColor(quadrant) {
+            const colors = {
+                'Q1': '#10B981',
+                'Q2': '#F59E0B',
+                'Q3': '#EF4444',
+                'Q4': '#8B5CF6',
+                'Neutral': '#6B7280'
+            };
+            return colors[quadrant] || '#6B7280';
+        }
+        
+        // Modal functions
+        function showPositionDetails(row) {
+            const modal = document.getElementById('positionModal');
+            const details = document.getElementById('modalDetails');
+            
+            document.getElementById('modalTitle').textContent = `${row.symbol} - ${row.tradeDate}`;
+            
+            details.innerHTML = `
+                <div class="detail-item">
+                    <div class="label">Symbol</div>
+                    <div class="value">${row.symbol}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">Company</div>
+                    <div class="value">${row.companyName}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">Asset Type</div>
+                    <div class="value">${row.assetType}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">Sector</div>
+                    <div class="value">${row.sector}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">Trade Date</div>
+                    <div class="value">${row.tradeDate}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">Notional</div>
+                    <div class="value">${formatCurrency(row.notional)}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">Volume</div>
+                    <div class="value">${row.volume.toLocaleString()}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">Executions</div>
+                    <div class="value">${row.executions}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">Reference Gap</div>
+                    <div class="value ${row.referenceGap >= 0 ? 'positive' : 'negative'}">
+                        ${row.referenceGap.toFixed(2)} bps
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">Timing Differential</div>
+                    <div class="value ${row.timingDifferential >= 0 ? 'positive' : 'negative'}">
+                        ${row.timingDifferential.toFixed(2)} bps
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">Gap Direction</div>
+                    <div class="value">${row.gapDirection}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="label">Directional Consistency</div>
+                    <div class="value">${row.directionalConsistency ? 'Yes' : 'No'}</div>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('positionModal').style.display = 'none';
+        }
+        
+        // Export functions
+        function exportAggregateData() {
+            const data = aggregatedData;
+            let csv = 'Symbol,Company Name,Asset Type,Sector,ETF Category,Total Notional,Total Volume,Trading Days,Weighted Avg Alpha,Weighted Ref Gap,Continuity Rate\n';
+            
+            data.forEach(row => {
+                csv += `${row.symbol},"${row.companyName}",${row.assetType},${row.sector},${row.etfCategory},${row.totalNotional},${row.totalVolume},${row.tradingDays},${row.weightedAlpha},${row.weightedRefGap},${row.continuityRate}\n`;
+            });
+            
+            downloadCSV(csv, 'sapinover_aggregate_analysis.csv');
+        }
+        
+        function exportRawData() {
+            const data = applyRawFiltersInternal();
+            let csv = 'Symbol,Trade Date,Notional,Volume,Executions,Reference Gap,Timing Differential,Directional Consistency,Gap Direction\n';
+            
+            data.forEach(row => {
+                csv += `${row.symbol},${row.tradeDate},${row.notional},${row.volume},${row.executions},${row.referenceGap},${row.timingDifferential},${row.directionalConsistency},${row.gapDirection}\n`;
+            });
+            
+            downloadCSV(csv, 'sapinover_raw_data.csv');
+        }
+        
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+        
+        // Tab switching
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Deactivate all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            event.target.closest('.tab-button').classList.add('active');
+            
+            currentTab = tabId;
+            
+            // Render tab content
+            renderDashboard();
+        }
+        
+        // Quadrant mode
+        function setQuadrantMode(mode) {
+            quadrantMode = mode;
+            
+            document.getElementById('quadrantZero').classList.remove('active');
+            document.getElementById('quadrantThreshold').classList.remove('active');
+            
+            if (mode === 'zero') {
+                document.getElementById('quadrantZero').classList.add('active');
+            } else {
+                document.getElementById('quadrantThreshold').classList.add('active');
+            }
+            
+            renderAlphaMetrics();
+        }
+        
+        // Daily analysis functions
+        document.getElementById('dailyDateSelector')?.addEventListener('change', function() {
+            const selectedDate = this.value;
+            if (!selectedDate) return;
+            
+            const dailyData = filteredData.filter(row => row.tradeDate === selectedDate);
+            
+            // Stats
+            const totalNotional = dailyData.reduce((sum, row) => sum + row.notional, 0);
+            const totalVolume = dailyData.reduce((sum, row) => sum + row.volume, 0);
+            const avgAlpha = dailyData.reduce((sum, row) => sum + row.timingDifferential, 0) / dailyData.length;
+            
+            document.getElementById('dailyNotional').textContent = formatCurrency(totalNotional);
+            document.getElementById('dailyObservations').textContent = dailyData.length.toLocaleString();
+            document.getElementById('dailyVolume').textContent = totalVolume.toLocaleString();
+            document.getElementById('dailyAvgAlpha').textContent = avgAlpha.toFixed(2) + ' bps';
+            
+            // Sector chart
+            const sectorData = {};
+            dailyData.forEach(row => {
+                if (!sectorData[row.sector]) sectorData[row.sector] = 0;
+                sectorData[row.sector] += row.notional;
+            });
+            
+            Plotly.newPlot('dailySectorChart', [{
+                values: Object.values(sectorData),
+                labels: Object.keys(sectorData),
+                type: 'pie'
+            }], {
+                margin: { t: 20, r: 20, b: 20, l: 20 }
+            }, { responsive: true });
+            
+            // Alpha distribution
+            Plotly.newPlot('dailyAlphaDistChart', [{
+                x: dailyData.map(r => r.timingDifferential),
+                type: 'histogram',
+                nbinsx: 30,
+                marker: { color: '#10B981' }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Alpha (bps)' },
+                yaxis: { title: 'Frequency' }
+            }, { responsive: true });
+            
+            // Quadrant breakdown
+            const quadrants = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
+            dailyData.forEach(row => {
+                const q = getQuadrant(row.referenceGap, row.timingDifferential, 'zero');
+                if (quadrants[q] !== undefined) quadrants[q]++;
+            });
+            
+            Plotly.newPlot('dailyQuadrantChart', [{
+                x: Object.keys(quadrants),
+                y: Object.values(quadrants),
+                type: 'bar',
+                marker: {
+                    color: ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+                }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Quadrant' },
+                yaxis: { title: 'Position Count' }
+            }, { responsive: true });
+            
+            // Table
+            const tbody = document.getElementById('dailyTableBody');
+            tbody.innerHTML = '';
+            dailyData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.onclick = () => showPositionDetails(row);
+                tr.innerHTML = `
+                    <td><strong>${row.symbol}</strong></td>
+                    <td>${formatCurrency(row.notional)}</td>
+                    <td>${row.volume.toLocaleString()}</td>
+                    <td class="${row.timingDifferential >= 0 ? 'positive' : 'negative'}">
+                        ${row.timingDifferential.toFixed(2)}
+                    </td>
+                    <td class="${row.referenceGap >= 0 ? 'positive' : 'negative'}">
+                        ${row.referenceGap.toFixed(2)}
+                    </td>
+                    <td>${row.sector}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+        
+        // Search box listeners
+        document.getElementById('aggregateSearchBox')?.addEventListener('input', function() {
+            renderAggregateTable(1);
+        });
+        
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('positionModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+        
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
