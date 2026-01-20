@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sapinover Research | Overnight Price Drift Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--slate-900:#0f172a;--slate-800:#1e293b;--slate-700:#334155;--slate-600:#475569;--slate-500:#64748b;--slate-400:#94a3b8;--slate-300:#cbd5e1;--slate-200:#e2e8f0;--slate-100:#f1f5f9;--slate-50:#f8fafc;--amber-600:#d97706;--amber-500:#f59e0b;--amber-400:#fbbf24;--amber-100:#fef3c7;--emerald-600:#059669;--emerald-500:#10b981;--rose-600:#e11d48;--rose-500:#f43f5e;--sky-500:#0ea5e9;--q1-color:#ea580c;--q2-color:#059669;--q3-color:#0284c7;--q4-color:#dc2626;--font-display:'Cormorant Garamond',Georgia,serif;--font-body:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-serif}
+        body{font-family:var(--font-body);background:var(--slate-100);color:var(--slate-800);line-height:1.5;min-height:100vh}
+        .header{background:linear-gradient(135deg,var(--slate-900) 0%,var(--slate-800) 50%,var(--slate-700) 100%);color:white;padding:20px 40px;border-bottom:4px solid var(--amber-500);box-shadow:0 4px 20px rgba(0,0,0,0.15);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+        .brand{display:flex;align-items:center;gap:20px}
+        .brand img{height:40px;width:auto}
+        .brand-text h1{font-family:var(--font-display);font-size:22px;font-weight:600;letter-spacing:-0.5px;color:var(--amber-400)}
+        .brand-text .tagline{font-size:11px;color:var(--slate-400);letter-spacing:1.5px;text-transform:uppercase}
+        .header-meta{text-align:right}
+        .header-meta .date-range{font-family:var(--font-display);font-size:18px;color:var(--amber-500);font-weight:500}
+        .header-meta .update-info{font-size:11px;color:var(--slate-400);margin-top:2px}
+        .main-container{display:flex;min-height:calc(100vh - 88px)}
+        .sidebar{width:300px;background:white;border-right:1px solid var(--slate-200);padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:20px;box-shadow:4px 0 12px rgba(0,0,0,0.03)}
+        .filter-section h3{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--slate-800);margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--amber-500);display:flex;align-items:center;gap:8px}
+        .filter-section h3 i{color:var(--amber-500);font-size:13px}
+        .filter-group{margin-bottom:14px}
+        .filter-group label{display:block;font-size:10px;font-weight:700;color:var(--slate-500);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
+        select,input[type="text"],input[type="number"]{width:100%;padding:10px 12px;border:1px solid var(--slate-200);border-radius:6px;font-family:var(--font-body);font-size:13px;color:var(--slate-800);background:white;transition:border-color 0.2s,box-shadow 0.2s}
+        select:focus,input:focus{outline:none;border-color:var(--amber-500);box-shadow:0 0 0 3px var(--amber-100)}
+        .date-range-toggle{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--slate-500);cursor:pointer}
+        .date-range-toggle input[type="checkbox"]{width:auto;accent-color:var(--amber-500)}
+        .date-range-inputs{display:none;gap:8px;margin-top:10px}
+        .date-range-inputs.active{display:flex}
+        .date-range-inputs select{flex:1}
+        .filter-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+        .chip{padding:5px 10px;background:var(--slate-100);border:1px solid var(--slate-200);border-radius:20px;font-size:11px;color:var(--slate-600);cursor:pointer;transition:all 0.2s}
+        .chip:hover{background:var(--slate-200)}
+        .chip.active{background:var(--amber-500);border-color:var(--amber-500);color:white}
+        .btn-reset{width:100%;padding:10px;background:var(--slate-100);border:1px solid var(--slate-300);border-radius:6px;font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--slate-600);cursor:pointer;transition:all 0.2s;margin-top:10px}
+        .btn-reset:hover{background:var(--slate-200)}
+        .view-toggle{display:flex;gap:4px;background:var(--slate-100);padding:4px;border-radius:6px;margin-top:10px}
+        .view-toggle button{flex:1;padding:8px;border:none;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;background:transparent;color:var(--slate-600)}
+        .view-toggle button.active{background:var(--amber-500);color:white}
+        .content{flex:1;padding:24px;overflow-y:auto}
+        .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:24px}
+        .kpi-card{background:white;border-radius:10px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid var(--slate-200)}
+        .kpi-card .label{font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+        .kpi-card .value{font-family:var(--font-display);font-size:26px;font-weight:600;color:var(--slate-800)}
+        .kpi-card .value.positive{color:var(--emerald-600)}
+        .kpi-card .value.negative{color:var(--rose-600)}
+        .kpi-card .subtext{font-size:11px;color:var(--slate-500);margin-top:4px}
+        .tabs{display:flex;gap:4px;background:var(--slate-200);padding:4px;border-radius:8px;margin-bottom:20px}
+        .tab-btn{flex:1;padding:10px 16px;background:transparent;border:none;border-radius:6px;font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--slate-600);cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+        .tab-btn:hover{color:var(--slate-800)}
+        .tab-btn.active{background:white;color:var(--slate-800);box-shadow:0 2px 4px rgba(0,0,0,0.08)}
+        .tab-btn i{font-size:12px}
+        .panel{display:none}
+        .panel.active{display:block}
+        .chart-container{background:white;border-radius:10px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid var(--slate-200)}
+        .chart-container h4{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--slate-800);margin-bottom:16px;display:flex;align-items:center;gap:10px}
+        .chart-container h4 i{color:var(--amber-500);font-size:14px}
+        .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+        @media(max-width:1200px){.chart-row{grid-template-columns:1fr}}
+        .table-container{background:white;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid var(--slate-200);overflow:hidden}
+        .table-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--slate-200)}
+        .table-header h4{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--slate-800);display:flex;align-items:center;gap:10px}
+        .table-header h4 i{color:var(--amber-500)}
+        .btn-export{padding:8px 14px;background:var(--slate-100);border:1px solid var(--slate-300);border-radius:6px;font-size:12px;font-weight:600;color:var(--slate-600);cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s}
+        .btn-export:hover{background:var(--slate-200)}
+        .data-table{width:100%;border-collapse:collapse}
+        .data-table th{background:var(--slate-50);padding:12px 16px;text-align:left;font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--slate-200);cursor:pointer;white-space:nowrap}
+        .data-table th:hover{background:var(--slate-100)}
+        .data-table th i{margin-left:6px;font-size:10px}
+        .data-table td{padding:12px 16px;border-bottom:1px solid var(--slate-100);font-size:13px}
+        .data-table tr:hover{background:var(--slate-50);cursor:pointer}
+        .data-table .symbol{font-weight:700;color:var(--slate-800)}
+        .data-table .company{font-size:11px;color:var(--slate-500)}
+        .data-table .mono{font-family:'SF Mono','Consolas',monospace;font-size:12px}
+        .data-table .positive{color:var(--emerald-600);font-weight:600}
+        .data-table .negative{color:var(--rose-600);font-weight:600}
+        .badge{display:inline-block;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:700}
+        .badge-stock{background:var(--sky-500);color:white}
+        .badge-etf{background:var(--amber-500);color:white}
+        .badge-success{background:var(--emerald-500);color:white}
+        .badge-fail{background:var(--rose-500);color:white}
+        .table-footer{padding:12px 20px;background:var(--slate-50);border-top:1px solid var(--slate-200);display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--slate-500)}
+        .pagination{display:flex;gap:4px}
+        .pagination button{padding:6px 12px;background:white;border:1px solid var(--slate-300);border-radius:4px;font-size:12px;cursor:pointer;transition:all 0.2s}
+        .pagination button:hover{background:var(--slate-100)}
+        .pagination button.active{background:var(--amber-500);border-color:var(--amber-500);color:white}
+        .pagination button:disabled{opacity:0.5;cursor:not-allowed}
+        .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:200;justify-content:center;align-items:center}
+        .modal-overlay.active{display:flex}
+        .modal{background:white;border-radius:12px;width:90%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+        .modal-header{padding:20px 24px;border-bottom:1px solid var(--slate-200);display:flex;justify-content:space-between;align-items:flex-start}
+        .modal-header .symbol-info h2{font-family:var(--font-display);font-size:28px;font-weight:700;color:var(--slate-800)}
+        .modal-header .symbol-info .company-name{font-size:14px;color:var(--slate-500);margin-top:2px}
+        .modal-close{width:36px;height:36px;border:none;background:var(--slate-100);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--slate-500);transition:all 0.2s}
+        .modal-close:hover{background:var(--slate-200);color:var(--slate-700)}
+        .modal-body{padding:24px}
+        .modal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+        .modal-stat{background:var(--slate-50);padding:12px;border-radius:6px}
+        .modal-stat .label{font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;margin-bottom:4px}
+        .modal-stat .value{font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--slate-800)}
+        .result-box{padding:12px;border-radius:6px;margin-top:12px}
+        .result-box.success{background:#f0fdf4;border:1px solid #bbf7d0}
+        .result-box.fail{background:#fef2f2;border:1px solid #fecaca}
+        .result-box .title{font-weight:700;margin-bottom:4px}
+        .result-box.success .title{color:#166534}
+        .result-box.fail .title{color:#991b1b}
+        .result-box .desc{font-size:13px}
+        .result-box.success .desc{color:#14532d}
+        .result-box.fail .desc{color:#7f1d1d}
+        .quadrant-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--slate-200)}
+        .legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--slate-600)}
+        .legend-dot{width:10px;height:10px;border-radius:50%}
+        .legend-dot.q1{background:var(--q1-color)}
+        .legend-dot.q2{background:var(--q2-color)}
+        .legend-dot.q3{background:var(--q3-color)}
+        .legend-dot.q4{background:var(--q4-color)}
+        .disclaimer{margin-top:40px;padding:20px;background:var(--slate-50);border-radius:8px;border:1px solid var(--slate-200)}
+        .disclaimer h5{font-size:11px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+        .disclaimer p{font-size:11px;color:var(--slate-500);line-height:1.6}
+        .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;color:var(--slate-500)}
+        .loading-spinner{width:40px;height:40px;border:3px solid var(--slate-200);border-top-color:var(--amber-500);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @media(max-width:900px){.main-container{flex-direction:column}.sidebar{width:100%;border-right:none;border-bottom:1px solid var(--slate-200)}.header{flex-direction:column;gap:16px;text-align:center}.header-meta{text-align:center}.kpi-row{grid-template-columns:repeat(2,1fr)}}
+        .info-tooltip{position:relative;display:inline-block;margin-left:4px;cursor:help}
+        .info-tooltip i{font-size:10px;color:var(--slate-400)}
+        .info-tooltip:hover::after{content:attr(data-tip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:var(--slate-800);color:white;padding:8px 12px;border-radius:6px;font-size:11px;white-space:nowrap;z-index:100}
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="brand">
+            <div class="brand-text">
+                <h1>Overnight Price Drift Analysis</h1>
+                <div class="tagline">Sapinover Research • Market Microstructure Analysis</div>
+            </div>
+        </div>
+        <div class="header-meta">
+            <div class="date-range" id="headerDateRange">Loading...</div>
+            <div class="update-info" id="headerUpdateInfo"></div>
+        </div>
+    </header>
+    
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="filter-section">
+                <h3><i class="fas fa-filter"></i> Filters</h3>
+                <div class="filter-group">
+                    <label>Trading Date</label>
+                    <select id="filterDate"><option value="all">All Days (Aggregate)</option></select>
+                    <label class="date-range-toggle"><input type="checkbox" id="dateRangeToggle"> Custom Date Range</label>
+                    <div class="date-range-inputs" id="dateRangeInputs">
+                        <select id="filterDateStart"></select>
+                        <span style="color:var(--slate-400)">→</span>
+                        <select id="filterDateEnd"></select>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>View Mode</label>
+                    <div class="view-toggle">
+                        <button class="active" data-view="observations">Observations</button>
+                        <button data-view="symbols">By Symbol</button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Asset Type</label>
+                    <select id="filterAssetType"><option value="all">All Assets</option><option value="Stock">Stocks</option><option value="ETF">ETFs</option></select>
+                </div>
+                <div class="filter-group" id="sectorFilterGroup">
+                    <label>Sector</label>
+                    <select id="filterSector"><option value="all">All Sectors</option></select>
+                </div>
+                <div class="filter-group" id="etfFilterGroup">
+                    <label>ETF Category</label>
+                    <select id="filterETFCategory"><option value="all">All Categories</option></select>
+                </div>
+                <div class="filter-group">
+                    <label>Leverage</label>
+                    <div class="filter-chips" id="leverageChips">
+                        <span class="chip active" data-value="all">All</span>
+                        <span class="chip" data-value="1x">1x</span>
+                        <span class="chip" data-value="2x">2x</span>
+                        <span class="chip" data-value="3x">3x</span>
+                        <span class="chip" data-value="inverse">Inverse</span>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Timing Differential (bps)</label>
+                    <select id="filterDifferential"><option value="all">All Observations</option><option value="positive">Positive Only (≥0)</option><option value="negative">Negative Only (<0)</option></select>
+                </div>
+                <div class="filter-group">
+                    <label>Symbol Search</label>
+                    <input type="text" id="filterSymbol" placeholder="e.g., TSLA, NVDA...">
+                </div>
+                <button class="btn-reset" id="btnReset"><i class="fas fa-undo"></i> Reset All Filters</button>
+            </div>
+            <div class="filter-section">
+                <h3><i class="fas fa-chart-pie"></i> Quick Stats</h3>
+                <div id="quickStats" style="font-size:12px;color:var(--slate-600)">
+                    <div style="margin-bottom:8px"><strong>Showing:</strong> <span id="qsCount">-</span></div>
+                    <div style="margin-bottom:8px"><strong>Notional:</strong> <span id="qsNotional">-</span></div>
+                    <div><strong>Symbols:</strong> <span id="qsSymbols">-</span></div>
+                </div>
+            </div>
+        </aside>
+        
+        <main class="content">
+            <div class="loading" id="loadingState"><div class="loading-spinner"></div><div>Loading data...</div></div>
+            <div id="dashboardContent" style="display:none">
+                <div class="kpi-row">
+                    <div class="kpi-card"><div class="label">Total Notional</div><div class="value" id="kpiNotional">-</div><div class="subtext" id="kpiNotionalSub"></div></div>
+                    <div class="kpi-card"><div class="label" id="kpiObsLabel">Observations</div><div class="value" id="kpiObs">-</div><div class="subtext" id="kpiObsSub"></div></div>
+                    <div class="kpi-card"><div class="label">Unique Symbols</div><div class="value" id="kpiSymbols">-</div><div class="subtext" id="kpiSymbolsSub"></div></div>
+                    <div class="kpi-card"><div class="label">Directional Consistency</div><div class="value" id="kpiContinuity">-</div><div class="subtext">Same-direction observations</div></div>
+                    <div class="kpi-card"><div class="label">Median Timing Diff<span class="info-tooltip" data-tip="(Pₜ - Pᵥ) / Pₐ × 10,000"><i class="fas fa-info-circle"></i></span></div><div class="value" id="kpiDiff">-</div><div class="subtext">bps</div></div>
+                    <div class="kpi-card"><div class="label">Wtd Avg Timing Diff</div><div class="value" id="kpiWtdDiff">-</div><div class="subtext">Notional-weighted (bps)</div></div>
+                </div>
+                
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="overview"><i class="fas fa-tachometer-alt"></i> Overview</button>
+                    <button class="tab-btn" data-tab="analysis"><i class="fas fa-chart-line"></i> Drift Analysis</button>
+                    <button class="tab-btn" data-tab="breakdown"><i class="fas fa-sitemap"></i> Breakdown</button>
+                    <button class="tab-btn" data-tab="explorer"><i class="fas fa-table"></i> Data Explorer</button>
+                </div>
+                
+                <div class="panel active" id="panel-overview">
+                    <div class="chart-container"><h4><i class="fas fa-chart-bar"></i> Daily Volume & Timing Differential Trend</h4><div id="chartTrend" style="height:350px"></div></div>
+                    <div class="chart-row">
+                        <div class="chart-container"><h4><i class="fas fa-chart-pie"></i> Asset Type Distribution</h4><div id="chartAssetType" style="height:300px"></div></div>
+                        <div class="chart-container"><h4><i class="fas fa-layer-group"></i> Leverage Distribution</h4><div id="chartLeverage" style="height:300px"></div></div>
+                    </div>
+                </div>
+                
+                <div class="panel" id="panel-analysis">
+                    <div class="chart-container">
+                        <h4><i class="fas fa-crosshairs"></i> Interval Position Analysis: Reference Gap vs Timing Differential (bps)</h4>
+                        <div id="chartScatter" style="height:450px"></div>
+                        <div class="quadrant-legend">
+                            <div class="legend-item"><span class="legend-dot q1"></span> Q1: Gap Up + Positive Differential</div>
+                            <div class="legend-item"><span class="legend-dot q2"></span> Q2: Gap Up + Negative Differential</div>
+                            <div class="legend-item"><span class="legend-dot q3"></span> Q3: Gap Down + Positive Differential</div>
+                            <div class="legend-item"><span class="legend-dot q4"></span> Q4: Gap Down + Negative Differential</div>
+                        </div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-container"><h4><i class="fas fa-chart-area"></i> Timing Differential Distribution (bps)</h4><div id="chartDiffHist" style="height:300px"></div></div>
+                        <div class="chart-container"><h4><i class="fas fa-check-circle"></i> Directional Consistency by Asset Type</h4><div id="chartConsistency" style="height:300px"></div></div>
+                    </div>
+                </div>
+                
+                <div class="panel" id="panel-breakdown">
+                    <div class="chart-container"><h4><i class="fas fa-th-large"></i> Sector/Category Treemap (by Notional)</h4><div id="chartTreemap" style="height:400px"></div></div>
+                    <div class="chart-row">
+                        <div class="chart-container"><h4><i class="fas fa-trophy"></i> Top 10 by Notional</h4><div id="chartTop10" style="height:350px"></div></div>
+                        <div class="chart-container"><h4><i class="fas fa-balance-scale"></i> Timing Differential by Leverage (bps)</h4><div id="chartLeveragePerf" style="height:350px"></div></div>
+                    </div>
+                </div>
+                
+                <div class="panel" id="panel-explorer">
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h4><i class="fas fa-database"></i> <span id="tableTitle">Observation Data</span></h4>
+                            <div class="table-actions"><button class="btn-export" id="btnExportCSV"><i class="fas fa-download"></i> Export CSV</button></div>
+                        </div>
+                        <div style="overflow-x:auto">
+                            <table class="data-table" id="dataTable">
+                                <thead id="tableHead"></thead>
+                                <tbody id="tableBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="table-footer"><span id="tableInfo">Showing 0 of 0</span><div class="pagination" id="pagination"></div></div>
+                    </div>
+                </div>
+                
+                <div class="disclaimer">
+                    <h5>Research Disclaimer</h5>
+                    <p>This analysis constitutes independent research on market microstructure and execution timing patterns. Timing differential metrics represent geometric positioning within overnight price intervals: <strong>Timing Differential = (Pₜ - Pᵥ) / Pₐ × 10,000 bps</strong> where Pₐ = prior close (anchor), Pₜ = next open (terminal), Pᵥ = overnight VWAP. This is not investment advice. Past observations do not predict future outcomes. Sapinover LLC conducts independent market microstructure research.</p>
+                    <p style="margin-top:8px;font-size:10px;color:var(--slate-400)"><i class="fas fa-database"></i> Data Sources: Trade data collected daily from venue operations. Market data sourced from publicly available APIs. Future releases will incorporate additional venue data from alternative trading systems.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="symbol-info"><h2 id="modalSymbol">-</h2><div class="company-name" id="modalCompany">-</div></div>
+                <button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom:16px"><span class="badge" id="modalAssetBadge">-</span><span style="margin-left:8px;font-size:13px;color:var(--slate-500)" id="modalMeta">-</span></div>
+                <div class="modal-stats">
+                    <div class="modal-stat"><div class="label">Notional</div><div class="value" id="modalNotional">-</div></div>
+                    <div class="modal-stat"><div class="label">Timing Diff</div><div class="value" id="modalDiff">-</div></div>
+                    <div class="modal-stat"><div class="label">Reference Gap</div><div class="value" id="modalReference">-</div></div>
+                </div>
+                <div class="result-box" id="modalResult"><div class="title" id="modalResultTitle">-</div><div class="desc" id="modalResultDesc">-</div></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// Data structure expects data.json with same format but renamed fields:
+// captured_bps → timing_differential_bps
+// uncaptured_bps → reference_gap_bps
+// continuity → directional_consistency
+
+let RAW_DATA=[],SYMBOLS=[],SECTORS=[],ETF_CATEGORIES=[],METADATA={},FILTERED=[],AGGREGATED=[];
+let viewMode='observations';
+const QUAD_COLORS={Q1:'#ea580c',Q2:'#059669',Q3:'#0284c7',Q4:'#dc2626'};
+const PLOT_LAYOUT={font:{family:'Source Sans 3'},paper_bgcolor:'transparent',plot_bgcolor:'transparent',margin:{t:20,r:20,b:40,l:50}};
+const PLOT_CONFIG={displayModeBar:false,responsive:true};
+let currentSort={key:'notional',asc:false},currentPage=1;
+const PAGE_SIZE=50;
+
+async function loadData(){
+    try{
+        const response=await fetch('data.json');
+        const json=await response.json();
+        METADATA=json.meta;SECTORS=json.sectors;ETF_CATEGORIES=json.etf_categories;SYMBOLS=json.symbols;
+        RAW_DATA=json.data.map(row=>{
+            const sym=SYMBOLS[row[0]];
+            return{symbol:sym[0],company:sym[1],asset_type:sym[2],sector:SECTORS[sym[3]]||'Other',etf_category:ETF_CATEGORIES[sym[4]]||'',leverage:sym[5],date:row[1],notional:row[2],volume:row[3],executions:row[4],reference_gap_bps:row[5],timing_differential_bps:row[6],directional_consistency:row[7],gap_dir:row[8]};
+        });
+        initializeUI();applyFilters();
+        document.getElementById('loadingState').style.display='none';
+        document.getElementById('dashboardContent').style.display='block';
+    }catch(error){
+        console.error('Failed to load data:',error);
+        document.getElementById('loadingState').innerHTML='<div style="color:#dc2626"><i class="fas fa-exclamation-triangle" style="font-size:32px;margin-bottom:16px"></i><div>Failed to load data. Please check that data.json exists.</div></div>';
+    }
+}
+
+// Placeholder - full JavaScript implementation would continue here matching the original structure
+// but with renamed variables (captured_bps → timing_differential_bps, etc.)
+
+console.log('Sapinover Drift Dashboard loaded. Awaiting data.json...');
+loadData();
+</script>
+</body>
+</html>
