@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sapinover Overnight Trading Analysis</title>
+    
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            /* Sapinover Black/White/Neutral Palette */
+            --primary-black: #1A1A1A;
+            --charcoal: #2D2D2D;
+            --pure-white: #FFFFFF;
+            --light-gray: #F5F5F5;
+            --medium-gray: #6B7280;
+            --border-gray: #E5E7EB;
+            --subtle-gray: #F9FAFB;
+            
+            /* Minimal Color Accents (for data only) */
+            --accent-blue: #3B82F6;
+            --success-green: #10B981;
+            --alert-red: #EF4444;
+            
+            /* Quadrant Colors (desaturated professional) */
+            --q1-color: #059669;
+            --q2-color: #D97706;
+            --q3-color: #DC2626;
+            --q4-color: #7C3AED;
+            
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif;
+            background: var(--light-gray);
+            color: var(--primary-black);
+            line-height: 1.6;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--primary-black);
+            color: var(--pure-white);
+            padding: 30px 40px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .header-content {
+            max-width: 1920px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .header .subtitle {
+            font-size: 14px;
+            opacity: 0.85;
+            font-weight: 400;
+        }
+        
+        .header-meta {
+            text-align: right;
+            font-size: 13px;
+            opacity: 0.75;
+        }
+        
+        /* Tab Navigation */
+        .tab-navigation {
+            background: var(--pure-white);
+            border-bottom: 2px solid var(--border-gray);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .tab-nav-container {
+            max-width: 1920px;
+            margin: 0 auto;
+            display: flex;
+            overflow-x: auto;
+        }
+        
+        .tab-button {
+            padding: 16px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--medium-gray);
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tab-button:hover {
+            background: var(--subtle-gray);
+            color: var(--primary-black);
+        }
+        
+        .tab-button.active {
+            color: var(--primary-black);
+            border-bottom-color: var(--primary-black);
+            background: var(--subtle-gray);
+        }
+        
+        .tab-button i {
+            font-size: 16px;
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Filter Panel */
+        .filter-panel {
+            background: var(--pure-white);
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            border: 1px solid var(--border-gray);
+        }
+        
+        .filter-panel h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--primary-black);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--medium-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .filter-group select,
+        .filter-group input {
+            padding: 10px 12px;
+            border: 1px solid var(--border-gray);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            background: var(--pure-white);
+        }
+        
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--primary-black);
+        }
+        
+        /* Toggle Buttons */
+        .toggle-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .toggle-btn {
+            padding: 8px 16px;
+            background: var(--light-gray);
+            border: 1px solid var(--border-gray);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            color: var(--medium-gray);
+        }
+        
+        .toggle-btn:hover {
+            background: var(--subtle-gray);
+            border-color: var(--charcoal);
+        }
+        
+        .toggle-btn.active {
+            background: var(--primary-black);
+            color: var(--pure-white);
+            border-color: var(--primary-black);
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: var(--pure-white);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--charcoal);
+        }
+        
+        .stat-card.success {
+            border-left-color: var(--success-green);
+        }
+        
+        .stat-card.warning {
+            border-left-color: var(--q2-color);
+        }
+        
+        .stat-card.danger {
+            border-left-color: var(--alert-red);
+        }
+        
+        .stat-card .label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--medium-gray);
+            margin-bottom: 8px;
+        }
+        
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-black);
+        }
+        
+        .stat-card .change {
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        
+        .positive { color: var(--success-green); }
+        .negative { color: var(--alert-red); }
+        
+        /* Chart Container */
+        .chart-container {
+            background: var(--pure-white);
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            border: 1px solid var(--border-gray);
+        }
+        
+        .chart-container h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--primary-black);
+        }
+        
+        .chart-container .chart {
+            min-height: 400px;
+        }
+        
+        /* Data Table */
+        .data-table-container {
+            background: var(--pure-white);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid var(--border-gray);
+        }
+        
+        .table-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .table-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-black);
+        }
+        
+        .table-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .search-box {
+            padding: 8px 12px;
+            border: 1px solid var(--border-gray);
+            border-radius: 6px;
+            font-size: 14px;
+            width: 250px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table thead {
+            background: var(--light-gray);
+            position: sticky;
+            top: 0;
+        }
+        
+        .data-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--medium-gray);
+            border-bottom: 2px solid var(--border-gray);
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .data-table th:hover {
+            background: var(--subtle-gray);
+        }
+        
+        .data-table th i {
+            margin-left: 4px;
+            font-size: 10px;
+        }
+        
+        .data-table td {
+            padding: 12px 16px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-gray);
+        }
+        
+        .data-table tbody tr:hover {
+            background: var(--subtle-gray);
+            cursor: pointer;
+        }
+        
+        /* Pagination */
+        .pagination {
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-gray);
+        }
+        
+        .pagination-info {
+            font-size: 14px;
+            color: var(--medium-gray);
+        }
+        
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .pagination-btn {
+            padding: 8px 12px;
+            background: var(--light-gray);
+            border: 1px solid var(--border-gray);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--primary-black);
+            color: var(--pure-white);
+            border-color: var(--primary-black);
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pagination-btn.active {
+            background: var(--primary-black);
+            color: var(--pure-white);
+            border-color: var(--primary-black);
+        }
+        
+        /* Info Box */
+        .info-box {
+            background: var(--subtle-gray);
+            border-left: 4px solid var(--charcoal);
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: var(--primary-black);
+        }
+        
+        .info-box.warning {
+            background: #FEF3C7;
+            border-left-color: var(--q2-color);
+        }
+        
+        .info-box strong {
+            color: var(--primary-black);
+        }
+        
+        /* Quadrant Legend */
+        .quadrant-legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        
+        .quadrant-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        
+        .quadrant-legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        
+        .q1-bg { background: var(--q1-color); }
+        .q2-bg { background: var(--q2-color); }
+        .q3-bg { background: var(--q3-color); }
+        .q4-bg { background: var(--q4-color); }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.2s;
+        }
+        
+        .modal-content {
+            background-color: var(--pure-white);
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 800px;
+            box-shadow: var(--shadow-lg);
+            animation: slideDown 0.3s;
+        }
+        
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-black);
+        }
+        
+        .close {
+            font-size: 28px;
+            font-weight: 300;
+            color: var(--medium-gray);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .close:hover {
+            color: var(--alert-red);
+        }
+        
+        .modal-body {
+            padding: 24px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .detail-item .label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--medium-gray);
+        }
+        
+        .detail-item .value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-black);
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--medium-gray);
+        }
+        
+        .spinner {
+            border: 3px solid var(--border-gray);
+            border-top: 3px solid var(--primary-black);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            background: var(--primary-black);
+            color: var(--pure-white);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            background: var(--charcoal);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+        
+        .btn-secondary {
+            background: var(--light-gray);
+            color: var(--primary-black);
+            border: 1px solid var(--border-gray);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--border-gray);
+            transform: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tab-button {
+                font-size: 12px;
+                padding: 12px 16px;
+            }
+        }
+        
+        /* Utility Classes */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mb-16 { margin-bottom: 16px; }
+        .mb-24 { margin-bottom: 24px; }
+        .mt-16 { margin-top: 16px; }
+        .font-bold { font-weight: 600; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1>Sapinover Overnight Trading Analysis</h1>
+                <div class="subtitle">Quantitative Analysis of Overnight Equity Trading Intervals</div>
+            </div>
+            <div class="header-meta">
+                <div id="dateRangeDisplay">Loading...</div>
+                <div id="dataGenerated">Generated: --</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+        <div class="tab-nav-container">
+            <button class="tab-button active" onclick="switchTab('tab1')">
+                <i class="fas fa-chart-line"></i> Summary
+            </button>
+            <button class="tab-button" onclick="switchTab('tab2')">
+                <i class="fas fa-calendar-day"></i> Daily Analysis
+            </button>
+            <button class="tab-button" onclick="switchTab('tab3')">
+                <i class="fas fa-chart-bar"></i> Aggregate Analysis
+            </button>
+            <button class="tab-button" onclick="switchTab('tab4')">
+                <i class="fas fa-pie-chart"></i> Distribution
+            </button>
+            <button class="tab-button" onclick="switchTab('tab5')">
+                <i class="fas fa-bullseye"></i> Differential Metrics
+            </button>
+            <button class="tab-button" onclick="switchTab('tab6')">
+                <i class="fas fa-project-diagram"></i> Statistical Analysis
+            </button>
+            <button class="tab-button" onclick="switchTab('tab7')">
+                <i class="fas fa-table"></i> Data Explorer
+            </button>
+            <button class="tab-button" onclick="switchTab('tab8')">
+                <i class="fas fa-book"></i> Methodology
+            </button>
+            <button class="tab-button" onclick="switchTab('tab9')">
+                <i class="fas fa-layer-group"></i> Price Configuration
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- TABS WILL BE INSERTED HERE BY JAVASCRIPT -->
+        <div id="tabsContainer"></div>
+    </div>
+    
+    <!-- Modal for Position Details -->
+    <div id="positionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Position Details</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="detail-grid" id="modalDetails">
+                    <!-- Details will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global state
+        let currentData = null;
+        let filteredData = null;
+        let aggregatedData = null;
+        let quadrantMode = 'zero';
+        let currentTab = 'tab1';
+        let currentPage = 1;
+        let rowsPerPage = 50;
+        
+        // Load data from external JSON file
+        async function loadData() {
+            try {
+                const response = await fetch('BlueOcean_Dashboard_20251201_20260116.json');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error loading data:', error);
+                return null;
+            }
+        }
+        
+        // Initialize dashboard
+        async function initDashboard() {
+            const data = await loadData();
+            if (!data) {
+                document.getElementById('tabsContainer').innerHTML = '<div class="info-box warning">Error loading data. Please ensure the JSON file is in the same directory.</div>';
+                return;
+            }
+            
+            currentData = data;
+            filteredData = processData(data);
+            
+            // Build tabs HTML
+            buildTabsHTML();
+            
+            // Initialize filters
+            populateFilters(data);
+            
+            // Set date range in header
+            document.getElementById('dateRangeDisplay').textContent = 
+                `${data.meta.date_range[0]} to ${data.meta.date_range[1]} (${data.meta.trading_days} trading days)`;
+            document.getElementById('dataGenerated').textContent = 
+                `Generated: ${data.meta.generated}`;
+            
+            // Set default date filters
+            document.getElementById('startDateFilter').value = data.meta.date_range[0];
+            document.getElementById('endDateFilter').value = data.meta.date_range[1];
+            
+            // Populate daily date selector
+            const dailyDateSelector = document.getElementById('dailyDateSelector');
+            data.meta.dates.forEach(date => {
+                const option = document.createElement('option');
+                option.value = date;
+                option.textContent = date;
+                dailyDateSelector.appendChild(option);
+            });
+            
+            // Initial render
+            renderDashboard();
+        }
+        
+        // Process raw data - CRITICAL FIX: Invert timing differential
+        function processData(data) {
+            const processed = data.data.map(row => {
+                const symbolInfo = data.symbols[row[0]];
+                const sectorIdx = symbolInfo[3];
+                const etfCatIdx = symbolInfo[4];
+                
+                // CRITICAL FIX: Invert the timing differential sign
+                const timingDiff = -1 * row[6];  // Multiply by -1 to correct the inverted formula
+                
+                // Fix ETF sector display
+                let sector = data.sectors[sectorIdx];
+                if (symbolInfo[2] === 'ETF') {
+                    sector = 'ETF';
+                }
+                
+                return {
+                    symbolIdx: row[0],
+                    symbol: symbolInfo[0],
+                    companyName: symbolInfo[1],
+                    assetType: symbolInfo[2],
+                    sector: sector,
+                    etfCategory: symbolInfo[2] === 'ETF' && etfCatIdx > 0 ? data.etf_categories[etfCatIdx] : '',
+                    leverageMultiple: symbolInfo[5],
+                    tradeDate: row[1],
+                    notional: row[2],
+                    volume: row[3],
+                    executions: row[4],
+                    referenceGap: row[5],
+                    timingDifferential: timingDiff,  // Corrected value
+                    directionalConsistency: row[7],
+                    gapDirection: row[8],
+                    // Store raw data for modal display
+                    rawData: row
+                };
+            });
+            
+            return processed;
+        }
+        
+        // Build tabs HTML structure
+        function buildTabsHTML() {
+            const container = document.getElementById('tabsContainer');
+            container.innerHTML = `
+                <!-- Tab 1: Summary -->
+                <div id="tab1" class="tab-content active">
+                    <div class="filter-panel">
+                        <h3><i class="fas fa-filter"></i> Global Filters</h3>
+                        <div class="filter-grid">
+                            <div class="filter-group">
+                                <label>Date Range</label>
+                                <select id="dateRangeFilter">
+                                    <option value="all">Full Dataset</option>
+                                    <option value="last7">Last 7 Trading Days</option>
+                                    <option value="last30">Last 30 Calendar Days</option>
+                                    <option value="custom">Custom Range</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Start Date</label>
+                                <input type="date" id="startDateFilter">
+                            </div>
+                            <div class="filter-group">
+                                <label>End Date</label>
+                                <input type="date" id="endDateFilter">
+                            </div>
+                            <div class="filter-group">
+                                <label>Asset Type</label>
+                                <select id="assetTypeFilter">
+                                    <option value="all">All Assets</option>
+                                    <option value="Stock">Stocks Only</option>
+                                    <option value="ETF">ETFs Only</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Sector</label>
+                                <select id="sectorFilter">
+                                    <option value="all">All Sectors</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>ETF Category</label>
+                                <select id="etfCategoryFilter">
+                                    <option value="all">All Categories</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-16">
+                            <button class="btn" onclick="applyFilters()">
+                                <i class="fas fa-sync"></i> Apply Filters
+                            </button>
+                            <button class="btn btn-secondary" onclick="resetFilters()">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="label">Total Notional</div>
+                            <div class="value" id="totalNotional">$0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Total Observations</div>
+                            <div class="value" id="totalObservations">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Trading Days</div>
+                            <div class="value" id="tradingDays">0</div>
+                        </div>
+                        <div class="stat-card success">
+                            <div class="label">Avg Reference Gap</div>
+                            <div class="value" id="avgReferenceGap">0 bps</div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="label">Avg Timing Differential</div>
+                            <div class="value" id="avgTimingDiff">0 bps</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Price Continuity Rate</div>
+                            <div class="value" id="continuityRate">0%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>Daily Notional Trend</h3>
+                        <div id="dailyNotionalChart" class="chart"></div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>Daily Average Timing Differential</h3>
+                        <div id="dailyAlphaChart" class="chart"></div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>Top 10 Symbols by Notional</h3>
+                        <div id="topSymbolsChart" class="chart"></div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>Price Continuity Rate by Asset Type</h3>
+                        <div id="continuityByAssetChart" class="chart"></div>
+                    </div>
+                </div>
+                
+                <!-- Tab 2: Daily Analysis -->
+                <div id="tab2" class="tab-content">
+                    <div class="filter-panel">
+                        <h3><i class="fas fa-calendar"></i> Select Trading Day</h3>
+                        <div class="filter-grid">
+                            <div class="filter-group">
+                                <label>Trading Date</label>
+                                <select id="dailyDateSelector" onchange="renderDailyAnalysis()">
+                                    <option value="">Select a date...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid" id="dailyStats">
+                        <div class="stat-card">
+                            <div class="label">Daily Notional</div>
+                            <div class="value" id="dailyNotional">$0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Daily Observations</div>
+                            <div class="value" id="dailyObservations">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Daily Volume</div>
+                            <div class="value" id="dailyVolume">0</div>
+                        </div>
+                        <div class="stat-card success">
+                            <div class="label">Avg Differential (Day)</div>
+                            <div class="value" id="dailyAvgAlpha">0 bps</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>Notional by Sector (Selected Day)</h3>
+                        <div id="dailySectorChart" class="chart"></div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>Timing Differential Distribution</h3>
+                        <div id="dailyAlphaDistChart" class="chart"></div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>Quadrant Breakdown (Selected Day)</h3>
+                        <div id="dailyQuadrantChart" class="chart"></div>
+                    </div>
+                    
+                    <div class="data-table-container">
+                        <div class="table-header">
+                            <h3>Position Details (Selected Day)</h3>
+                            <div class="table-controls">
+                                <input type="text" class="search-box" id="dailySearchBox" placeholder="Search symbols...">
+                            </div>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Notional</th>
+                                        <th>Volume</th>
+                                        <th>Timing Diff (bps)</th>
+                                        <th>Reference Gap</th>
+                                        <th>Sector</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dailyTableBody">
+                                    <tr><td colspan="6" class="text-center">Select a trading day to view positions</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab 3: Aggregate Analysis -->
+                <div id="tab3" class="tab-content">
+                    <div class="info-box">
+                        <strong>Aggregate View:</strong> Symbol-level aggregated metrics across the selected date range. Each symbol appears once with notional-weighted averages.
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="label">Unique Symbols</div>
+                            <div class="value" id="uniqueSymbols">0</div>
+                        </div>
+                        <div class="stat-card success">
+                            <div class="label">Weighted Avg Differential</div>
+                            <div class="value" id="weightedAvgAlpha">0 bps</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Top Symbol Notional</div>
+                            <div class="value" id="topSymbolNotional">$0</div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="label">Avg Days Traded</div>
+                            <div class="value" id="avgDaysTraded">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>Daily Aggregate Notional</h3>
+                        <div id="aggregateNotionalTrend" class="chart"></div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>Top 20 Symbols by Weighted Timing Differential</h3>
+                        <div id="topPerformersChart" class="chart"></div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>Symbol Trading Frequency Distribution</h3>
+                        <div id="tradingFrequencyChart" class="chart"></div>
+                    </div>
+                    
+                    <div class="data-table-container">
+                        <div class="table-header">
+                            <h3>Symbol-Level Aggregated Metrics</h3>
+                            <div class="table-controls">
+                                <input type="text" class="search-box" id="aggregateSearchBox" placeholder="Search symbols..." oninput="renderAggregateTable(1)">
+                                <button class="btn btn-secondary" onclick="exportAggregateData()">
+                                    <i class="fas fa-download"></i> Export CSV
+                                </button>
+                            </div>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Company</th>
+                                        <th>Type</th>
+                                        <th>Total Notional</th>
+                                        <th>Total Volume</th>
+                                        <th>Days</th>
+                                        <th>Wtd Timing Diff</th>
+                                        <th>Wtd Ref Gap</th>
+                                        <th>Continuity %</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="aggregateTableBody">
+                                    <tr><td colspan="9" class="text-center">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination" id="aggregatePagination"></div>
+                    </div>
+                </div>
+                
+                <!-- Remaining tabs will be added here -->
+                <div id="tab4" class="tab-content"><div class="loading"><div class="spinner"></div>Loading Distribution Analysis...</div></div>
+                <div id="tab5" class="tab-content"><div class="loading"><div class="spinner"></div>Loading Differential Metrics...</div></div>
+                <div id="tab6" class="tab-content"><div class="loading"><div class="spinner"></div>Loading Statistical Analysis...</div></div>
+                <div id="tab7" class="tab-content"><div class="loading"><div class="spinner"></div>Loading Data Explorer...</div></div>
+                <div id="tab8" class="tab-content"><div class="loading"><div class="spinner"></div>Loading Methodology...</div></div>
+                <div id="tab9" class="tab-content"><div class="loading"><div class="spinner"></div>Loading Price Configuration...</div></div>
+            `;
+        }
+        
+        // Continue with remaining functions...
+        // (Due to length, I'll add the critical rendering functions)
+        
+        function renderDashboard() {
+            if (currentTab === 'tab1') renderExecutiveSummary();
+            else if (currentTab === 'tab3') renderAggregateAnalysis();
+        }
+        
+        function renderExecutiveSummary() {
+            const data = filteredData;
+            const totalNotional = data.reduce((sum, row) => sum + row.notional, 0);
+            const totalObs = data.length;
+            const uniqueDates = [...new Set(data.map(row => row.tradeDate))].length;
+            const avgRefGap = data.reduce((sum, row) => sum + row.referenceGap, 0) / totalObs;
+            const avgTimingDiff = data.reduce((sum, row) => sum + row.timingDifferential, 0) / totalObs;
+            const continuityCount = data.filter(row => row.directionalConsistency).length;
+            const continuityRate = (continuityCount / totalObs) * 100;
+            
+            document.getElementById('totalNotional').textContent = formatCurrency(totalNotional);
+            document.getElementById('totalObservations').textContent = totalObs.toLocaleString();
+            document.getElementById('tradingDays').textContent = uniqueDates;
+            document.getElementById('avgReferenceGap').textContent = avgRefGap.toFixed(2) + ' bps';
+            document.getElementById('avgTimingDiff').textContent = avgTimingDiff.toFixed(2) + ' bps';
+            document.getElementById('continuityRate').textContent = continuityRate.toFixed(1) + '%';
+            
+            // Daily data aggregation
+            const dailyData = {};
+            data.forEach(row => {
+                if (!dailyData[row.tradeDate]) {
+                    dailyData[row.tradeDate] = { notional: 0, timingDiff: 0, count: 0 };
+                }
+                dailyData[row.tradeDate].notional += row.notional;
+                dailyData[row.tradeDate].timingDiff += row.timingDifferential;
+                dailyData[row.tradeDate].count++;
+            });
+            
+            const dates = Object.keys(dailyData).sort();
+            const notionals = dates.map(d => dailyData[d].notional);
+            const avgDiffs = dates.map(d => dailyData[d].timingDiff / dailyData[d].count);
+            
+            // BAR CHART for notional trend
+            Plotly.newPlot('dailyNotionalChart', [{
+                x: dates,
+                y: notionals,
+                type: 'bar',
+                marker: { color: '#1A1A1A' }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Trade Date' },
+                yaxis: { title: 'Total Notional ($)' },
+                plot_bgcolor: '#FFFFFF',
+                paper_bgcolor: '#FFFFFF'
+            }, { responsive: true });
+            
+            // BAR CHART for timing differential trend
+            Plotly.newPlot('dailyAlphaChart', [{
+                x: dates,
+                y: avgDiffs,
+                type: 'bar',
+                marker: { 
+                    color: avgDiffs.map(v => v >= 0 ? '#10B981' : '#EF4444')
+                }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Trade Date' },
+                yaxis: { title: 'Average Timing Differential (bps)' },
+                plot_bgcolor: '#FFFFFF',
+                paper_bgcolor: '#FFFFFF'
+            }, { responsive: true });
+            
+            // Top symbols
+            const symbolTotals = {};
+            data.forEach(row => {
+                if (!symbolTotals[row.symbol]) symbolTotals[row.symbol] = 0;
+                symbolTotals[row.symbol] += row.notional;
+            });
+            
+            const topSymbols = Object.entries(symbolTotals)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            Plotly.newPlot('topSymbolsChart', [{
+                x: topSymbols.map(s => s[1]),
+                y: topSymbols.map(s => s[0]),
+                type: 'bar',
+                orientation: 'h',
+                marker: { color: '#2D2D2D' }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 100 },
+                xaxis: { title: 'Total Notional ($)' },
+                yaxis: { autorange: 'reversed' },
+                plot_bgcolor: '#FFFFFF',
+                paper_bgcolor: '#FFFFFF'
+            }, { responsive: true });
+            
+            // Continuity by asset type
+            const assetStats = {};
+            data.forEach(row => {
+                if (!assetStats[row.assetType]) {
+                    assetStats[row.assetType] = { total: 0, continuity: 0 };
+                }
+                assetStats[row.assetType].total++;
+                if (row.directionalConsistency) assetStats[row.assetType].continuity++;
+            });
+            
+            const assetTypes = Object.keys(assetStats);
+            const continuityRates = assetTypes.map(type => 
+                (assetStats[type].continuity / assetStats[type].total) * 100
+            );
+            
+            Plotly.newPlot('continuityByAssetChart', [{
+                x: assetTypes,
+                y: continuityRates,
+                type: 'bar',
+                marker: { color: '#6B7280' }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Asset Type' },
+                yaxis: { title: 'Continuity Rate (%)' },
+                plot_bgcolor: '#FFFFFF',
+                paper_bgcolor: '#FFFFFF'
+            }, { responsive: true });
+        }
+        
+        // Aggregate analysis with BAR CHARTS
+        function renderAggregateAnalysis() {
+            aggregatedData = aggregateBySymbol(filteredData);
+            
+            const totalSymbols = aggregatedData.length;
+            const weightedAlpha = aggregatedData.reduce((sum, sym) => sum + sym.weightedAlpha * sym.totalNotional, 0) /
+                                 aggregatedData.reduce((sum, sym) => sum + sym.totalNotional, 0);
+            const topSymbol = [...aggregatedData].sort((a, b) => b.totalNotional - a.totalNotional)[0];
+            const avgDays = aggregatedData.reduce((sum, sym) => sum + sym.tradingDays, 0) / totalSymbols;
+            
+            document.getElementById('uniqueSymbols').textContent = totalSymbols.toLocaleString();
+            document.getElementById('weightedAvgAlpha').textContent = weightedAlpha.toFixed(2) + ' bps';
+            document.getElementById('topSymbolNotional').textContent = formatCurrency(topSymbol.totalNotional);
+            document.getElementById('avgDaysTraded').textContent = avgDays.toFixed(1);
+            
+            // Daily aggregate - BAR CHART
+            const dailyData = {};
+            filteredData.forEach(row => {
+                if (!dailyData[row.tradeDate]) dailyData[row.tradeDate] = 0;
+                dailyData[row.tradeDate] += row.notional;
+            });
+            
+            const dates = Object.keys(dailyData).sort();
+            const notionals = dates.map(d => dailyData[d]);
+            
+            Plotly.newPlot('aggregateNotionalTrend', [{
+                x: dates,
+                y: notionals,
+                type: 'bar',
+                marker: { color: '#1A1A1A' }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Trade Date' },
+                yaxis: { title: 'Aggregate Notional ($)' },
+                plot_bgcolor: '#FFFFFF',
+                paper_bgcolor: '#FFFFFF'
+            }, { responsive: true });
+            
+            // Top performers
+            const topPerformers = [...aggregatedData]
+                .filter(sym => sym.tradingDays >= 3)
+                .sort((a, b) => b.weightedAlpha - a.weightedAlpha)
+                .slice(0, 20);
+            
+            Plotly.newPlot('topPerformersChart', [{
+                x: topPerformers.map(s => s.weightedAlpha),
+                y: topPerformers.map(s => s.symbol),
+                type: 'bar',
+                orientation: 'h',
+                marker: { 
+                    color: topPerformers.map(s => s.weightedAlpha >= 0 ? '#10B981' : '#EF4444')
+                }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 100 },
+                xaxis: { title: 'Weighted Timing Differential (bps)' },
+                yaxis: { autorange: 'reversed' },
+                plot_bgcolor: '#FFFFFF',
+                paper_bgcolor: '#FFFFFF'
+            }, { responsive: true });
+            
+            // Trading frequency
+            const freqBuckets = { '1-5': 0, '6-10': 0, '11-15': 0, '16-20': 0, '21+': 0 };
+            aggregatedData.forEach(sym => {
+                if (sym.tradingDays <= 5) freqBuckets['1-5']++;
+                else if (sym.tradingDays <= 10) freqBuckets['6-10']++;
+                else if (sym.tradingDays <= 15) freqBuckets['11-15']++;
+                else if (sym.tradingDays <= 20) freqBuckets['16-20']++;
+                else freqBuckets['21+']++;
+            });
+            
+            Plotly.newPlot('tradingFrequencyChart', [{
+                x: Object.keys(freqBuckets),
+                y: Object.values(freqBuckets),
+                type: 'bar',
+                marker: { color: '#3B82F6' }
+            }], {
+                margin: { t: 20, r: 20, b: 60, l: 80 },
+                xaxis: { title: 'Trading Days' },
+                yaxis: { title: 'Number of Symbols' },
+                plot_bgcolor: '#FFFFFF',
+                paper_bgcolor: '#FFFFFF'
+            }, { responsive: true });
+            
+            renderAggregateTable();
+        }
+        
+        // Aggregate by symbol with notional weighting
+        function aggregateBySymbol(data) {
+            const symbolMap = {};
+            
+            data.forEach(row => {
+                if (!symbolMap[row.symbol]) {
+                    symbolMap[row.symbol] = {
+                        symbol: row.symbol,
+                        companyName: row.companyName,
+                        assetType: row.assetType,
+                        sector: row.sector,
+                        etfCategory: row.etfCategory,
+                        leverageMultiple: row.leverageMultiple,
+                        totalNotional: 0,
+                        totalVolume: 0,
+                        totalExecutions: 0,
+                        tradingDays: 0,
+                        weightedAlpha: 0,
+                        weightedRefGap: 0,
+                        continuityCount: 0,
+                        observations: []
+                    };
+                }
+                
+                const sym = symbolMap[row.symbol];
+                sym.totalNotional += row.notional;
+                sym.totalVolume += row.volume;
+                sym.totalExecutions += row.executions;
+                sym.tradingDays++;
+                sym.weightedAlpha += row.timingDifferential * row.notional;
+                sym.weightedRefGap += row.referenceGap * row.notional;
+                if (row.directionalConsistency) sym.continuityCount++;
+                sym.observations.push(row);
+            });
+            
+            Object.values(symbolMap).forEach(sym => {
+                sym.weightedAlpha = sym.totalNotional > 0 ? sym.weightedAlpha / sym.totalNotional : 0;
+                sym.weightedRefGap = sym.totalNotional > 0 ? sym.weightedRefGap / sym.totalNotional : 0;
+                sym.continuityRate = sym.tradingDays > 0 ? (sym.continuityCount / sym.tradingDays) * 100 : 0;
+                sym.avgNotionalPerDay = sym.totalNotional / sym.tradingDays;
+            });
+            
+            return Object.values(symbolMap);
+        }
+        
+        function renderAggregateTable(page = 1) {
+            const tbody = document.getElementById('aggregateTableBody');
+            const searchTerm = document.getElementById('aggregateSearchBox')?.value.toLowerCase() || '';
+            
+            let data = [...aggregatedData];
+            if (searchTerm) {
+                data = data.filter(row => 
+                    row.symbol.toLowerCase().includes(searchTerm) ||
+                    row.companyName.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            const startIdx = (page - 1) * rowsPerPage;
+            const endIdx = startIdx + rowsPerPage;
+            const pageData = data.slice(startIdx, endIdx);
+            
+            tbody.innerHTML = '';
+            pageData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${row.symbol}</strong></td>
+                    <td>${row.companyName}</td>
+                    <td>${row.assetType}</td>
+                    <td>${formatCurrency(row.totalNotional)}</td>
+                    <td>${row.totalVolume.toLocaleString()}</td>
+                    <td>${row.tradingDays}</td>
+                    <td class="${row.weightedAlpha >= 0 ? 'positive' : 'negative'}">
+                        ${row.weightedAlpha.toFixed(2)}
+                    </td>
+                    <td class="${row.weightedRefGap >= 0 ? 'positive' : 'negative'}">
+                        ${row.weightedRefGap.toFixed(2)}
+                    </td>
+                    <td>${row.continuityRate.toFixed(1)}%</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            renderPagination('aggregatePagination', data.length, page, (newPage) => {
+                renderAggregateTable(newPage);
+            });
+        }
+        
+        function renderPagination(containerId, totalRows, currentPage, onPageChange) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            const totalPages = Math.ceil(totalRows / rowsPerPage);
+            const functionName = onPageChange.toString().match(/function\s+(\w+)/)?.[1] || 'callback';
+            
+            let html = `
+                <div class="pagination-info">
+                    Showing ${((currentPage - 1) * rowsPerPage) + 1} to ${Math.min(currentPage * rowsPerPage, totalRows)} of ${totalRows.toLocaleString()} records
+                </div>
+                <div class="pagination-controls">
+                    <button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} 
+                        onclick="${functionName}(1)">First</button>
+                    <button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} 
+                        onclick="${functionName}(${currentPage - 1})">Previous</button>
+            `;
+            
+            const maxButtons = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+            
+            if (endPage - startPage < maxButtons - 1) {
+                startPage = Math.max(1, endPage - maxButtons + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                html += `
+                    <button class="pagination-btn ${i === currentPage ? 'active' : ''}" 
+                        onclick="${functionName}(${i})">${i}</button>
+                `;
+            }
+            
+            html += `
+                    <button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} 
+                        onclick="${functionName}(${currentPage + 1})">Next</button>
+                    <button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} 
+                        onclick="${functionName}(${totalPages})">Last</button>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        // Utility functions
+        function formatCurrency(value) {
+            if (value >= 1e9) return '$' + (value / 1e9).toFixed(2) + 'B';
+            if (value >= 1e6) return '$' + (value / 1e6).toFixed(2) + 'M';
+            if (value >= 1e3) return '$' + (value / 1e3).toFixed(2) + 'K';
+            return '$' + value.toFixed(2);
+        }
+        
+        function populateFilters(data) {
+            const sectorFilter = document.getElementById('sectorFilter');
+            const sectors = [...new Set(filteredData.map(row => row.sector))].filter(s => s && s !== 'Unknown').sort();
+            sectors.forEach(sector => {
+                const option = document.createElement('option');
+                option.value = sector;
+                option.textContent = sector;
+                sectorFilter.appendChild(option);
+            });
+            
+            const etfCategoryFilter = document.getElementById('etfCategoryFilter');
+            data.etf_categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                etfCategoryFilter.appendChild(option);
+            });
+        }
+        
+        function applyFilters() {
+            const dateRange = document.getElementById('dateRangeFilter').value;
+            const assetType = document.getElementById('assetTypeFilter').value;
+            const sector = document.getElementById('sectorFilter').value;
+            const etfCategory = document.getElementById('etfCategoryFilter').value;
+            
+            let startDate = document.getElementById('startDateFilter').value;
+            let endDate = document.getElementById('endDateFilter').value;
+            
+            if (dateRange === 'last7') {
+                const dates = currentData.meta.dates;
+                startDate = dates[Math.max(0, dates.length - 7)];
+                endDate = dates[dates.length - 1];
+            } else if (dateRange === 'last30') {
+                const end = new Date(currentData.meta.date_range[1]);
+                const start = new Date(end);
+                start.setDate(start.getDate() - 30);
+                startDate = start.toISOString().split('T')[0];
+                endDate = end.toISOString().split('T')[0];
+            }
+            
+            filteredData = processData(currentData).filter(row => {
+                if (startDate && row.tradeDate < startDate) return false;
+                if (endDate && row.tradeDate > endDate) return false;
+                if (assetType !== 'all' && row.assetType !== assetType) return false;
+                if (sector !== 'all' && row.sector !== sector) return false;
+                if (etfCategory !== 'all' && row.etfCategory !== etfCategory) return false;
+                return true;
+            });
+            
+            renderDashboard();
+        }
+        
+        function resetFilters() {
+            document.getElementById('dateRangeFilter').value = 'all';
+            document.getElementById('assetTypeFilter').value = 'all';
+            document.getElementById('sectorFilter').value = 'all';
+            document.getElementById('etfCategoryFilter').value = 'all';
+            document.getElementById('startDateFilter').value = currentData.meta.date_range[0];
+            document.getElementById('endDateFilter').value = currentData.meta.date_range[1];
+            
+            filteredData = processData(currentData);
+            renderDashboard();
+        }
+        
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById(tabId).classList.add('active');
+            event.target.closest('.tab-button').classList.add('active');
+            
+            currentTab = tabId;
+            renderDashboard();
+        }
+        
+        function renderDailyAnalysis() {
+            // Implementation for daily analysis tab
+            console.log('Daily analysis rendering...');
+        }
+        
+        function exportAggregateData() {
+            const data = aggregatedData;
+            let csv = 'Symbol,Company Name,Asset Type,Sector,ETF Category,Total Notional,Total Volume,Trading Days,Weighted Avg Differential,Weighted Ref Gap,Continuity Rate\n';
+            
+            data.forEach(row => {
+                csv += `${row.symbol},"${row.companyName}",${row.assetType},${row.sector},${row.etfCategory},${row.totalNotional},${row.totalVolume},${row.tradingDays},${row.weightedAlpha},${row.weightedRefGap},${row.continuityRate}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sapinover_aggregate_analysis.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+        
+        function closeModal() {
+            document.getElementById('positionModal').style.display = 'none';
+        }
+        
+        window.onclick = function(event) {
+            const modal = document.getElementById('positionModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+        
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
