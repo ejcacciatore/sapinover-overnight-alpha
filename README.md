@@ -1,116 +1,45 @@
-# Sapinover Research - Overnight Alpha Analysis Dashboard
-
-**Independent Market Microstructure Research on BlueOcean ATS**
-
-![Sapinover Research](logo.png)
-
-## Overview
-
-This interactive dashboard analyzes overnight equity trading patterns from BlueOcean Alternative Trading System (ATS), examining alpha capture efficiency across 18 trading days from November-December 2025.
-
-### Key Metrics
-- **$40.6 Billion** Total Notional Volume
-- **13,967** Trading Observations  
-- **1,908** Unique Symbols
-- **18** Trading Days Analyzed
-
-## Features
-
-### 📊 Interactive Analytics
-- **Overview Tab**: Daily volume trends with notional-weighted alpha overlay
-- **Alpha Analysis Tab**: Scatter plot visualization by quadrant, distribution histograms
-- **Breakdown Tab**: Sector treemaps, top symbols, leverage performance
-- **Data Explorer Tab**: Full sortable/filterable table with CSV export
-
-### 🔍 Advanced Filtering
-- Date selection (single day or custom range)
-- Asset type (Stocks vs ETFs)
-- Sector and ETF category filters
-- Leverage multiple (1x, 2x, 3x, Inverse)
-- Alpha performance (positive/negative)
-- Symbol search
-
-### 📈 Aggregation
-All multi-day views use **notional-weighted averages** for alpha metrics, providing institutional-grade analysis that properly weights larger positions.
+# Sapinover Overnight Trading Analysis Dashboard v3.0
 
 ## Files
+- `index.html` - Main dashboard page (dark theme with gold accents)
+- `dashboard.js` - All JavaScript functionality
+- `data.json` - 22,387 observations from Dec 1, 2025 - Jan 16, 2026
+- `FullLogo_NoBuffer__1_.png` - Sapinover logo
 
-```
-sapinover-dashboard/
-├── index.html    # Main dashboard (self-contained)
-├── data.json     # Trading data (0.9 MB, compact format)
-├── logo.png      # Sapinover brand logo
-└── README.md     # This file
-```
+## Features
+1. **Executive Summary** - Hero stats, daily notional/volume charts, price continuity trends
+2. **Daily Analysis** - Date picker, bar charts with 5-day MA, sector breakdown, sortable tables
+3. **Market Structure** - Asset type distribution, sector analysis, ETF leverage breakdown
+4. **Quadrant Analysis** - Interactive scatter plot (Plotly), position-level tables
+5. **Data Explorer** - Full filtering, sorting, pagination, CSV export
+6. **Methodology** - Calculation definitions, academic framework
+
+## Key Improvements
+- Sectors properly display ETF_Category for ETFs (no more "None")
+- Winsorized view (1st/99th percentile) as default with toggle for full range
+- Clean, readable scatter plot (not compressed by outliers)
+- Dark theme with gold accents for institutional presentation
+- Sortable columns throughout
+- Export functionality
 
 ## Deployment
 
 ### GitHub Pages
-1. Create a new repository on GitHub
-2. Upload all files from this directory
-3. Go to Settings → Pages → Source: "main" branch
-4. Your dashboard will be live at `https://[username].github.io/[repo-name]/`
+1. Create new repository
+2. Upload all 4 files to root
+3. Settings → Pages → Branch: main, Folder: / (root)
+4. Access at: https://USERNAME.github.io/REPO-NAME/
 
 ### Local Testing
-Simply open `index.html` in any modern browser. The dashboard loads data from `data.json` in the same directory.
-
-## Adding New Data
-
-To add new trading days:
-
-1. Process new daily data through the BlueOcean enrichment pipeline
-2. Merge with Symbol Master for metadata
-3. Regenerate `data.json` using the compact format:
-   - Symbol lookup table for deduplication
-   - Sector/Category indices
-   - Compact row arrays
-
-The dashboard automatically detects the date range from the data and updates all visualizations.
-
-## Data Schema
-
-### Compact JSON Structure
-```json
-{
-  "meta": {
-    "generated": "2026-01-19 23:40:06",
-    "date_range": ["2025-11-04", "2025-12-31"],
-    "trading_days": 18,
-    "total_observations": 13967,
-    "total_notional": 40557409803,
-    "unique_symbols": 1908,
-    "dates": ["2025-11-04", "2025-12-01", ...]
-  },
-  "sectors": ["Basic Materials", "Communication Services", ...],
-  "etf_categories": ["Bank Loan", "China Region", ...],
-  "symbols": [
-    ["AAPL", "Apple Inc.", "Stock", 10, 0, "1x"],
-    ...
-  ],
-  "data": [
-    [0, "2025-11-04", 1500000, 5000, 25, 45.2, 23.1, 1, "UP"],
-    ...
-  ]
-}
+```bash
+python -m http.server 8000
+# Open: http://localhost:8000/
 ```
 
-## Research Framework
-
-Based on Lou, Polk & Skouras (2019) "A tug of war: Overnight versus intraday expected returns" examining how equity returns concentrate disproportionately in overnight sessions.
-
-### Key Concepts
-- **Overnight Continuity**: Percentage of positions where gap direction persists
-- **Captured Alpha**: Alpha realized through execution timing
-- **Uncaptured Alpha**: Market gap that could have been captured with optimal execution
-- **Quadrants**: Q1-Q4 classification based on gap direction and capture success
-
-## Disclaimer
-
-This analysis constitutes independent research on market microstructure and execution quality. It is not investment advice, and no investment recommendations are made or implied. Past performance does not guarantee future results.
-
-Sapinover LLC is retained by BlueOcean ATS for market microstructure research and receives a flat monthly fee. For investment decisions, consult a registered investment advisor.
+## Data Update
+To update with new data, regenerate `data.json` using the parquet processing script.
+The JSON format uses lookup tables for compression (~2.4MB for 22K observations).
 
 ---
-
-**Sapinover LLC** | Independent Market Microstructure Research  
-*Forward Thinking, Transparent Actions*
+Generated: January 2026
+Sapinover LLC - Market Microstructure Research
