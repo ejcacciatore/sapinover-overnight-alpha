@@ -268,13 +268,34 @@ function getRefGap(d) {
     return USE_WINSORIZED ? d.refGapW : d.refGap;
 }
 
-function getQuadrant(d) {
+// NEW: Directional Execution Quality
+// Positive = favorable execution vs next open (good)
+// Negative = unfavorable execution vs next open (bad)
+// Formula: Flip sign of timing diff for DOWN gaps
+function getDirectionalQuality(d) {
     const td = getTimingDiff(d);
+    // In a DOWN gap: VWAP > Open is GOOD (you sold higher), so flip the negative timing diff to positive
+    // In an UP gap: VWAP < Open is GOOD (you bought lower), timing diff is already positive
+    return d.gapDirection === 'DOWN' ? -td : td;
+}
+
+// Raw (non-winsorized) directional quality for display
+function getRawDirectionalQuality(d) {
+    return d.gapDirection === 'DOWN' ? -d.timingDiff : d.timingDiff;
+}
+
+function getQuadrant(d) {
+    // Quadrant based on Directional Quality (not raw timing diff)
+    const dq = getDirectionalQuality(d);
     const rg = getRefGap(d);
     
-    if (rg >= 0 && td >= 0) return 'Q1';
-    if (rg < 0 && td >= 0) return 'Q2';
-    if (rg < 0 && td < 0) return 'Q3';
+    // Q1: Positive gap capture + Positive execution quality (Momentum)
+    // Q2: Negative gap capture + Positive execution quality (Mean Reversion)
+    // Q3: Negative gap capture + Negative execution quality (Protection)
+    // Q4: Positive gap capture + Negative execution quality (Top Tick)
+    if (rg >= 0 && dq >= 0) return 'Q1';
+    if (rg < 0 && dq >= 0) return 'Q2';
+    if (rg < 0 && dq < 0) return 'Q3';
     return 'Q4';
 }
 
@@ -303,11 +324,15 @@ function renderSummaryTab() {
     // Calculate summary stats
     const totalNotional = FILTERED_DATA.reduce((sum, d) => sum + d.notional, 0);
     const totalVolume = FILTERED_DATA.reduce((sum, d) => sum + d.volume, 0);
+    const avgDirQuality = FILTERED_DATA.reduce((sum, d) => sum + getDirectionalQuality(d), 0) / FILTERED_DATA.length;
     const avgTimingDiff = FILTERED_DATA.reduce((sum, d) => sum + getTimingDiff(d), 0) / FILTERED_DATA.length;
     const avgRefGap = FILTERED_DATA.reduce((sum, d) => sum + getRefGap(d), 0) / FILTERED_DATA.length;
     const dirConsistencyRate = FILTERED_DATA.filter(d => d.dirConsistency).length / FILTERED_DATA.length * 100;
     const uniqueSymbols = new Set(FILTERED_DATA.map(d => d.symbol)).size;
     const dailyAvgNotional = totalNotional / META.tradingDays;
+    
+    // Calculate favorable execution rate (positive directional quality)
+    const favorableRate = FILTERED_DATA.filter(d => getDirectionalQuality(d) >= 0).length / FILTERED_DATA.length * 100;
     
     container.innerHTML = `
         <!-- Hero Section -->
@@ -367,17 +392,25 @@ function renderSummaryTab() {
                 <h3 class="section-title">Performance Metrics</h3>
             </div>
             <div class="metrics-grid">
+                <div class="metric-card" style="background: ${avgDirQuality >= 0 ? 'linear-gradient(135deg, rgba(52, 211, 153, 0.1) 0%, var(--bg-card) 100%)' : 'linear-gradient(135deg, rgba(248, 113, 113, 0.1) 0%, var(--bg-card) 100%)'}; border-color: ${avgDirQuality >= 0 ? 'rgba(52, 211, 153, 0.3)' : 'rgba(248, 113, 113, 0.3)'};">
+                    <div class="metric-value ${getValueClass(avgDirQuality)}" style="font-size: 1.75rem;">${formatBps(avgDirQuality, true)}</div>
+                    <div class="metric-label">Avg Execution Quality</div>
+                </div>
                 <div class="metric-card">
-                    <div class="metric-value ${getValueClass(avgTimingDiff)}">${formatBps(avgTimingDiff, true)}</div>
-                    <div class="metric-label">Avg Timing Differential</div>
+                    <div class="metric-value positive">${formatPercent(favorableRate)}</div>
+                    <div class="metric-label">Favorable Exec Rate</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value ${getValueClass(avgRefGap)}">${formatBps(avgRefGap, true)}</div>
                     <div class="metric-label">Avg Reference Gap</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-value">${formatNumber(totalVolume / 1e6, 1)}M</div>
-                    <div class="metric-label">Total Shares</div>
+                    <div class="metric-value muted">${formatBps(avgTimingDiff, true)}</div>
+                    <div class="metric-label">Avg Raw Timing Diff</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value positive">${formatPercent(dirConsistencyRate)}</div>
+                    <div class="metric-label">Price Continuity</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value">${formatNumber(FILTERED_DATA.reduce((sum, d) => sum + d.executions, 0))}</div>
@@ -698,11 +731,11 @@ function renderDailyTab() {
             <div class="section-header">
                 <div class="section-marker"></div>
                 <h3 class="section-title">Daily Trends</h3>
-                <span class="section-subtitle">Timing differential and notional with 5-day moving average</span>
+                <span class="section-subtitle">Execution quality and notional with 5-day moving average</span>
             </div>
             <div class="chart-grid">
                 <div class="card">
-                    <h4 class="card-title">Timing Differential Trend</h4>
+                    <h4 class="card-title">Execution Quality Trend</h4>
                     <div class="chart-container" id="dailyTimingChart"></div>
                 </div>
                 <div class="card">
@@ -725,7 +758,7 @@ function renderDailyTab() {
                     <div class="chart-container" id="dailySectorChart"></div>
                 </div>
                 <div class="card">
-                    <h4 class="card-title">Timing Differential Distribution</h4>
+                    <h4 class="card-title">Execution Quality Distribution</h4>
                     <div class="chart-container" id="dailyHistogram"></div>
                 </div>
             </div>
@@ -748,7 +781,7 @@ function renderDailyTab() {
                                 <th>Type</th>
                                 <th>Sector</th>
                                 <th class="sortable" onclick="sortDailyTable('notional')">Notional</th>
-                                <th class="sortable" onclick="sortDailyTable('timingDiff')">Timing Diff</th>
+                                <th class="sortable" onclick="sortDailyTable('dirQuality')">Exec Quality</th>
                                 <th class="sortable" onclick="sortDailyTable('refGap')">Ref Gap</th>
                                 <th>Gap Dir</th>
                                 <th>Continuity</th>
@@ -776,12 +809,24 @@ function updateDailyDate(date) {
     // Update metrics
     const totalNotional = dayData.reduce((sum, d) => sum + d.notional, 0);
     const totalVolume = dayData.reduce((sum, d) => sum + d.volume, 0);
+    const avgDirQuality = dayData.length > 0 ? 
+        dayData.reduce((sum, d) => sum + getDirectionalQuality(d), 0) / dayData.length : 0;
     const avgTimingDiff = dayData.length > 0 ? 
         dayData.reduce((sum, d) => sum + getTimingDiff(d), 0) / dayData.length : 0;
     const dirConsistencyRate = dayData.length > 0 ?
         dayData.filter(d => d.dirConsistency).length / dayData.length * 100 : 0;
+    const favorableRate = dayData.length > 0 ?
+        dayData.filter(d => getDirectionalQuality(d) >= 0).length / dayData.length * 100 : 0;
     
     document.getElementById('dailyMetrics').innerHTML = `
+        <div class="metric-card" style="background: ${avgDirQuality >= 0 ? 'linear-gradient(135deg, rgba(52, 211, 153, 0.1) 0%, var(--bg-card) 100%)' : 'linear-gradient(135deg, rgba(248, 113, 113, 0.1) 0%, var(--bg-card) 100%)'}; border-color: ${avgDirQuality >= 0 ? 'rgba(52, 211, 153, 0.3)' : 'rgba(248, 113, 113, 0.3)'};">
+            <div class="metric-value ${getValueClass(avgDirQuality)}" style="font-size: 1.5rem;">${formatBps(avgDirQuality, true)}</div>
+            <div class="metric-label">Avg Execution Quality</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value positive">${formatPercent(favorableRate)}</div>
+            <div class="metric-label">Favorable Exec Rate</div>
+        </div>
         <div class="metric-card">
             <div class="metric-value">${formatCurrency(totalNotional, true)}</div>
             <div class="metric-label">Daily Notional</div>
@@ -789,14 +834,6 @@ function updateDailyDate(date) {
         <div class="metric-card">
             <div class="metric-value">${formatNumber(dayData.length)}</div>
             <div class="metric-label">Observations</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-value">${formatNumber(totalVolume / 1e6, 1)}M</div>
-            <div class="metric-label">Shares Traded</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-value ${getValueClass(avgTimingDiff)}">${formatBps(avgTimingDiff, true)}</div>
-            <div class="metric-label">Avg Timing Diff</div>
         </div>
         <div class="metric-card">
             <div class="metric-value positive">${formatPercent(dirConsistencyRate)}</div>
@@ -819,20 +856,20 @@ function renderDailyTrendCharts() {
         return {
             date: date,
             notional: dayData.reduce((sum, d) => sum + d.notional, 0),
-            avgTiming: dayData.length > 0 ? 
-                dayData.reduce((sum, d) => sum + getTimingDiff(d), 0) / dayData.length : 0,
+            avgDirQuality: dayData.length > 0 ? 
+                dayData.reduce((sum, d) => sum + getDirectionalQuality(d), 0) / dayData.length : 0,
             count: dayData.length
         };
     });
     
     const labels = dailyStats.map(d => d.date.substring(5));
-    const timingData = dailyStats.map(d => d.avgTiming);
+    const dirQualityData = dailyStats.map(d => d.avgDirQuality);
     const notionalData = dailyStats.map(d => d.notional / 1e9);
     
     // Calculate 5-day MA
-    const timingMA = timingData.map((val, idx) => {
+    const dirQualityMA = dirQualityData.map((val, idx) => {
         if (idx < 4) return null;
-        return timingData.slice(idx - 4, idx + 1).reduce((a, b) => a + b, 0) / 5;
+        return dirQualityData.slice(idx - 4, idx + 1).reduce((a, b) => a + b, 0) / 5;
     });
     
     const notionalMA = notionalData.map((val, idx) => {
@@ -840,7 +877,7 @@ function renderDailyTrendCharts() {
         return notionalData.slice(idx - 4, idx + 1).reduce((a, b) => a + b, 0) / 5;
     });
     
-    // Timing Differential Trend
+    // Directional Execution Quality Trend
     const ctx1 = document.createElement('canvas');
     document.getElementById('dailyTimingChart').innerHTML = '';
     document.getElementById('dailyTimingChart').appendChild(ctx1);
@@ -852,17 +889,17 @@ function renderDailyTrendCharts() {
             datasets: [
                 {
                     type: 'bar',
-                    label: 'Daily Avg',
-                    data: timingData,
-                    backgroundColor: timingData.map(v => v >= 0 ? 'rgba(52, 211, 153, 0.7)' : 'rgba(248, 113, 113, 0.7)'),
-                    borderColor: timingData.map(v => v >= 0 ? '#34d399' : '#f87171'),
+                    label: 'Daily Avg Exec Quality',
+                    data: dirQualityData,
+                    backgroundColor: dirQualityData.map(v => v >= 0 ? 'rgba(52, 211, 153, 0.7)' : 'rgba(248, 113, 113, 0.7)'),
+                    borderColor: dirQualityData.map(v => v >= 0 ? '#34d399' : '#f87171'),
                     borderWidth: 1,
                     borderRadius: 3
                 },
                 {
                     type: 'line',
                     label: '5-Day MA',
-                    data: timingMA,
+                    data: dirQualityMA,
                     borderColor: '#c9a227',
                     borderWidth: 2,
                     borderDash: [5, 5],
@@ -989,19 +1026,19 @@ function renderDailySectorChart(dayData) {
 }
 
 function renderDailyHistogram(dayData) {
-    const timingVals = dayData.map(d => getTimingDiff(d));
+    const dirQualityVals = dayData.map(d => getDirectionalQuality(d));
     
     // Create bins
     const binSize = 50;
-    const min = Math.floor(Math.min(...timingVals) / binSize) * binSize;
-    const max = Math.ceil(Math.max(...timingVals) / binSize) * binSize;
+    const min = Math.floor(Math.min(...dirQualityVals) / binSize) * binSize;
+    const max = Math.ceil(Math.max(...dirQualityVals) / binSize) * binSize;
     
     const bins = {};
     for (let i = min; i <= max; i += binSize) {
         bins[i] = 0;
     }
     
-    timingVals.forEach(v => {
+    dirQualityVals.forEach(v => {
         const bin = Math.floor(v / binSize) * binSize;
         if (bins[bin] !== undefined) bins[bin]++;
     });
@@ -1050,7 +1087,7 @@ function renderDailyTable(dayData) {
         switch(dailySortColumn) {
             case 'symbol': aVal = a.symbol; bVal = b.symbol; break;
             case 'notional': aVal = a.notional; bVal = b.notional; break;
-            case 'timingDiff': aVal = getTimingDiff(a); bVal = getTimingDiff(b); break;
+            case 'dirQuality': aVal = getDirectionalQuality(a); bVal = getDirectionalQuality(b); break;
             case 'refGap': aVal = getRefGap(a); bVal = getRefGap(b); break;
             default: aVal = a.notional; bVal = b.notional;
         }
@@ -1063,19 +1100,21 @@ function renderDailyTable(dayData) {
     sorted = sorted.slice(0, 50);
     
     const tbody = document.getElementById('dailyTableBody');
-    tbody.innerHTML = sorted.map(d => `
+    tbody.innerHTML = sorted.map(d => {
+        const dirQuality = getDirectionalQuality(d);
+        return `
         <tr onclick="showPositionModal('${d.symbol}', '${d.date}')">
             <td class="symbol">${d.symbol}</td>
             <td class="company" title="${d.company}">${d.company.substring(0, 25)}</td>
             <td>${d.assetType}</td>
             <td class="muted">${d.sector.substring(0, 15)}</td>
             <td class="mono">${formatCurrency(d.notional, true)}</td>
-            <td class="mono ${getValueClass(getTimingDiff(d))}">${formatBps(getTimingDiff(d), true)}</td>
+            <td class="mono ${getValueClass(dirQuality)}" style="font-weight: 600;">${formatBps(dirQuality, true)}</td>
             <td class="mono ${getValueClass(getRefGap(d))}">${formatBps(getRefGap(d), true)}</td>
             <td>${d.gapDirection}</td>
             <td>${d.dirConsistency ? '<span class="positive">✓</span>' : '<span class="negative">✗</span>'}</td>
         </tr>
-    `).join('');
+    `}).join('');
 }
 
 function sortDailyTable(column) {
@@ -1415,15 +1454,15 @@ function renderQuadrantTab() {
             <div class="section-header">
                 <div class="section-marker"></div>
                 <h3 class="section-title">Quadrant Analysis</h3>
-                <span class="section-subtitle">Timing Differential vs Reference Gap ${USE_WINSORIZED ? '(Winsorized)' : '(Full Range)'}</span>
+                <span class="section-subtitle">Execution Quality vs Reference Gap ${USE_WINSORIZED ? '(Winsorized)' : '(Full Range)'}</span>
             </div>
             <div class="card">
                 <div id="quadrantScatter" style="height: 500px;"></div>
                 <div class="legend">
-                    <div class="legend-item"><div class="legend-dot" style="background: #34d399;"></div> Q1: Momentum</div>
-                    <div class="legend-item"><div class="legend-dot" style="background: #fbbf24;"></div> Q2: Mean Reversion</div>
-                    <div class="legend-item"><div class="legend-dot" style="background: #f87171;"></div> Q3: Protection</div>
-                    <div class="legend-item"><div class="legend-dot" style="background: #a78bfa;"></div> Q4: Top Tick</div>
+                    <div class="legend-item"><div class="legend-dot" style="background: #34d399;"></div> Q1: Momentum (+Gap, +Quality)</div>
+                    <div class="legend-item"><div class="legend-dot" style="background: #fbbf24;"></div> Q2: Mean Reversion (−Gap, +Quality)</div>
+                    <div class="legend-item"><div class="legend-dot" style="background: #f87171;"></div> Q3: Protection (−Gap, −Quality)</div>
+                    <div class="legend-item"><div class="legend-dot" style="background: #a78bfa;"></div> Q4: Top Tick (+Gap, −Quality)</div>
                 </div>
             </div>
         </section>
@@ -1442,7 +1481,7 @@ function renderQuadrantTab() {
                             <th>Description</th>
                             <th>Observations</th>
                             <th>Notional</th>
-                            <th>Avg Timing Diff</th>
+                            <th>Avg Exec Quality</th>
                             <th>Avg Ref Gap</th>
                             <th>Continuity Rate</th>
                         </tr>
@@ -1457,7 +1496,7 @@ function renderQuadrantTab() {
             <div class="section-header">
                 <div class="section-marker"></div>
                 <h3 class="section-title">Position-Level Analysis</h3>
-                <span class="section-subtitle">Top 100 positions by absolute timing differential</span>
+                <span class="section-subtitle">Top 100 positions by absolute execution quality</span>
             </div>
             <div class="table-container">
                 <div class="table-scroll">
@@ -1469,10 +1508,10 @@ function renderQuadrantTab() {
                                 <th>Date</th>
                                 <th>Type</th>
                                 <th>Notional</th>
-                                <th>Timing Diff</th>
+                                <th>Exec Quality</th>
+                                <th>Raw Timing</th>
                                 <th>Ref Gap</th>
-                                <th>VS Open</th>
-                                <th>VS Close</th>
+                                <th>Gap Dir</th>
                                 <th>Quadrant</th>
                                 <th>Dir</th>
                             </tr>
@@ -1495,7 +1534,7 @@ function renderQuadrantScatter() {
         
         return {
             x: quadData.map(d => getRefGap(d)),
-            y: quadData.map(d => getTimingDiff(d)),
+            y: quadData.map(d => getDirectionalQuality(d)),
             mode: 'markers',
             type: 'scatter',
             name: `${q}: ${info.name}`,
@@ -1508,8 +1547,9 @@ function renderQuadrantScatter() {
             text: quadData.map(d => 
                 `<b>${d.symbol}</b><br>${d.company.substring(0, 30)}<br>` +
                 `Notional: ${formatCurrency(d.notional, true)}<br>` +
-                `Timing: ${formatBps(getTimingDiff(d), true)}<br>` +
+                `Exec Quality: ${formatBps(getDirectionalQuality(d), true)}<br>` +
                 `Ref Gap: ${formatBps(getRefGap(d), true)}<br>` +
+                `Gap Dir: ${d.gapDirection}<br>` +
                 `Date: ${d.date}`
             ),
             hovertemplate: '%{text}<extra></extra>',
@@ -1530,7 +1570,7 @@ function renderQuadrantScatter() {
             tickfont: { size: 10 }
         },
         yaxis: {
-            title: { text: 'Timing Differential (bps)', font: { size: 12 } },
+            title: { text: 'Directional Execution Quality (bps)', font: { size: 12 } },
             zeroline: true,
             zerolinewidth: 2,
             zerolinecolor: 'rgba(201, 162, 39, 0.5)',
@@ -1562,6 +1602,7 @@ function renderQuadrantTables(quadrants) {
         const notional = data.reduce((sum, d) => sum + d.notional, 0);
         const avgTiming = data.length > 0 ? data.reduce((sum, d) => sum + getTimingDiff(d), 0) / data.length : 0;
         const avgRefGap = data.length > 0 ? data.reduce((sum, d) => sum + getRefGap(d), 0) / data.length : 0;
+        const avgDirQuality = data.length > 0 ? data.reduce((sum, d) => sum + getDirectionalQuality(d), 0) / data.length : 0;
         const contRate = data.length > 0 ? data.filter(d => d.dirConsistency).length / data.length * 100 : 0;
         
         return `
@@ -1570,23 +1611,22 @@ function renderQuadrantTables(quadrants) {
                 <td style="color: ${info.color};">${info.name}</td>
                 <td>${formatNumber(data.length)}</td>
                 <td class="mono">${formatCurrency(notional, true)}</td>
-                <td class="mono ${getValueClass(avgTiming)}">${formatBps(avgTiming, true)}</td>
+                <td class="mono ${getValueClass(avgDirQuality)}" style="font-weight: 600;">${formatBps(avgDirQuality, true)}</td>
                 <td class="mono ${getValueClass(avgRefGap)}">${formatBps(avgRefGap, true)}</td>
                 <td>${formatPercent(contRate)}</td>
             </tr>
         `;
     }).join('');
     
-    // Position table - top 100 by absolute timing diff
+    // Position table - top 100 by absolute directional quality
     const sorted = [...FILTERED_DATA]
-        .sort((a, b) => Math.abs(getTimingDiff(b)) - Math.abs(getTimingDiff(a)))
+        .sort((a, b) => Math.abs(getDirectionalQuality(b)) - Math.abs(getDirectionalQuality(a)))
         .slice(0, 100);
     
     const positionBody = document.getElementById('quadrantPositionTable');
     positionBody.innerHTML = sorted.map(d => {
         const q = getQuadrant(d);
-        const vsOpen = d.vwap && d.nextOpen ? ((d.nextOpen - d.vwap) / d.vwap) * 10000 : null;
-        const vsClose = d.vwap && d.nextClose ? ((d.nextClose - d.vwap) / d.vwap) * 10000 : null;
+        const dirQuality = getRawDirectionalQuality(d);
         
         return `
             <tr onclick="showPositionModal('${d.symbol}', '${d.date}')">
@@ -1595,10 +1635,10 @@ function renderQuadrantTables(quadrants) {
                 <td class="muted">${d.date.substring(5)}</td>
                 <td>${d.assetType}</td>
                 <td class="mono">${formatCurrency(d.notional, true)}</td>
-                <td class="mono ${getValueClass(getTimingDiff(d))}">${formatBps(getTimingDiff(d), true)}</td>
+                <td class="mono ${getValueClass(dirQuality)}" style="font-weight: 600;">${formatBps(dirQuality, true)}</td>
+                <td class="mono muted">${formatBps(d.timingDiff, true)}</td>
                 <td class="mono ${getValueClass(getRefGap(d))}">${formatBps(getRefGap(d), true)}</td>
-                <td class="mono ${getValueClass(vsOpen)}">${vsOpen !== null ? formatBps(vsOpen, true) : '-'}</td>
-                <td class="mono ${getValueClass(vsClose)}">${vsClose !== null ? formatBps(vsClose, true) : '-'}</td>
+                <td>${d.gapDirection}</td>
                 <td><span class="quad-badge ${q.toLowerCase()}">${q}</span></td>
                 <td>${d.dirConsistency ? '<span class="positive">✓</span>' : '<span class="negative">✗</span>'}</td>
             </tr>
@@ -1649,7 +1689,7 @@ function renderExplorerTab() {
                             <th>Type</th>
                             <th>Sector</th>
                             <th class="sortable" onclick="sortExplorer('notional')">Notional</th>
-                            <th class="sortable" onclick="sortExplorer('timingDiff')">Timing Diff</th>
+                            <th class="sortable" onclick="sortExplorer('dirQuality')">Exec Quality</th>
                             <th class="sortable" onclick="sortExplorer('refGap')">Ref Gap</th>
                             <th>Gap Dir</th>
                             <th>Dir</th>
@@ -1690,7 +1730,7 @@ function renderExplorerTable() {
             case 'symbol': aVal = a.symbol; bVal = b.symbol; break;
             case 'date': aVal = a.date; bVal = b.date; break;
             case 'notional': aVal = a.notional; bVal = b.notional; break;
-            case 'timingDiff': aVal = getTimingDiff(a); bVal = getTimingDiff(b); break;
+            case 'dirQuality': aVal = getDirectionalQuality(a); bVal = getDirectionalQuality(b); break;
             case 'refGap': aVal = getRefGap(a); bVal = getRefGap(b); break;
             default: aVal = a.notional; bVal = b.notional;
         }
@@ -1711,7 +1751,9 @@ function renderExplorerTable() {
     
     // Render table
     const tbody = document.getElementById('explorerTableBody');
-    tbody.innerHTML = pageData.map(d => `
+    tbody.innerHTML = pageData.map(d => {
+        const dirQuality = getDirectionalQuality(d);
+        return `
         <tr onclick="showPositionModal('${d.symbol}', '${d.date}')">
             <td class="symbol">${d.symbol}</td>
             <td class="company" title="${d.company}">${d.company.substring(0, 25)}</td>
@@ -1719,12 +1761,12 @@ function renderExplorerTable() {
             <td>${d.assetType}</td>
             <td class="muted">${d.sector.substring(0, 15)}</td>
             <td class="mono">${formatCurrency(d.notional, true)}</td>
-            <td class="mono ${getValueClass(getTimingDiff(d))}">${formatBps(getTimingDiff(d), true)}</td>
+            <td class="mono ${getValueClass(dirQuality)}" style="font-weight: 600;">${formatBps(dirQuality, true)}</td>
             <td class="mono ${getValueClass(getRefGap(d))}">${formatBps(getRefGap(d), true)}</td>
             <td>${d.gapDirection}</td>
             <td>${d.dirConsistency ? '<span class="positive">✓</span>' : '<span class="negative">✗</span>'}</td>
         </tr>
-    `).join('');
+    `}).join('');
     
     // Render pagination
     const paginationDiv = document.getElementById('explorerPagination');
@@ -1765,7 +1807,7 @@ function exportExplorerCSV() {
     const data = getFilteredExplorerData();
     
     const headers = ['Symbol', 'Company', 'Date', 'Asset Type', 'Sector', 'Notional', 
-        'Timing Differential (bps)', 'Reference Gap (bps)', 'Gap Direction', 'Directional Consistency'];
+        'Execution Quality (bps)', 'Raw Timing Diff (bps)', 'Reference Gap (bps)', 'Gap Direction', 'Directional Consistency'];
     
     const rows = data.map(d => [
         d.symbol,
@@ -1774,7 +1816,8 @@ function exportExplorerCSV() {
         d.assetType,
         `"${d.sector.replace(/"/g, '""')}"`,
         d.notional.toFixed(2),
-        getTimingDiff(d).toFixed(2),
+        getDirectionalQuality(d).toFixed(2),
+        d.timingDiff.toFixed(2),
         getRefGap(d).toFixed(2),
         d.gapDirection,
         d.dirConsistency ? 'Yes' : 'No'
@@ -1809,22 +1852,38 @@ function renderMethodologyTab() {
             
             <h3>Key Metrics</h3>
             
+            <p><strong>Directional Execution Quality (bps)</strong></p>
+            <p>
+                The primary performance metric measuring how favorably trades executed relative to 
+                the next-day market open, accounting for gap direction. Positive values indicate 
+                favorable execution (better than the open), negative values indicate unfavorable execution.
+            </p>
+            <div class="formula-box">
+                For UP gaps: Execution Quality = Raw Timing Differential<br>
+                For DOWN gaps: Execution Quality = −1 × Raw Timing Differential
+            </div>
+            <p>
+                <strong>Interpretation:</strong> In a DOWN gap, if your VWAP is higher than the next open, 
+                you got a better price (positive quality). In an UP gap, if your VWAP is lower than the 
+                next open, you also got a better price (positive quality).
+            </p>
+            
+            <p><strong>Raw Timing Differential (bps)</strong></p>
+            <p>
+                The raw price movement from overnight VWAP to next-day market open. This is a 
+                directionally neutral measurement before adjustment for gap direction:
+            </p>
+            <div class="formula-box">
+                Raw Timing Differential = ((Next Open − VWAP) / VWAP) × 10,000
+            </div>
+            
             <p><strong>Reference Gap (bps)</strong></p>
             <p>
                 The price movement from prior market close to overnight VWAP, representing the 
                 portion of the overnight gap captured at execution:
             </p>
             <div class="formula-box">
-                Reference Gap = ((VWAP - Prior Close) / Prior Close) × 10,000
-            </div>
-            
-            <p><strong>Timing Differential (bps)</strong></p>
-            <p>
-                The price movement from overnight VWAP to next-day market open, representing 
-                execution timing relative to the opening auction:
-            </p>
-            <div class="formula-box">
-                Timing Differential = ((Next Open - VWAP) / VWAP) × 10,000
+                Reference Gap = ((VWAP − Prior Close) / Prior Close) × 10,000
             </div>
             
             <p><strong>Total Overnight Gap (bps)</strong></p>
@@ -1832,7 +1891,7 @@ function renderMethodologyTab() {
                 The complete overnight price movement from prior close to next-day open:
             </p>
             <div class="formula-box">
-                Total Gap = ((Next Open - Prior Close) / Prior Close) × 10,000
+                Total Gap = ((Next Open − Prior Close) / Prior Close) × 10,000
             </div>
             
             <p><strong>Price Continuity Rate</strong></p>
@@ -1843,11 +1902,14 @@ function renderMethodologyTab() {
             </p>
             
             <h3>Quadrant Classification</h3>
+            <p>
+                Quadrants are now defined using Directional Execution Quality (not raw timing differential):
+            </p>
             <ul>
-                <li><strong>Q1 (Momentum):</strong> Positive Reference Gap, Positive Timing Differential</li>
-                <li><strong>Q2 (Mean Reversion):</strong> Negative Reference Gap, Positive Timing Differential</li>
-                <li><strong>Q3 (Protection):</strong> Negative Reference Gap, Negative Timing Differential</li>
-                <li><strong>Q4 (Top Tick):</strong> Positive Reference Gap, Negative Timing Differential</li>
+                <li><strong>Q1 (Momentum):</strong> Positive Reference Gap, Positive Execution Quality − Captured gap and beat the open</li>
+                <li><strong>Q2 (Mean Reversion):</strong> Negative Reference Gap, Positive Execution Quality − Counter-trend but beat the open</li>
+                <li><strong>Q3 (Protection):</strong> Negative Reference Gap, Negative Execution Quality − Counter-trend and worse than open</li>
+                <li><strong>Q4 (Top Tick):</strong> Positive Reference Gap, Negative Execution Quality − Captured gap but worse than open</li>
             </ul>
             
             <h3>Data Processing</h3>
@@ -1906,6 +1968,7 @@ function showPositionModal(symbol, date) {
     
     const vsOpen = d.vwap && d.nextOpen ? ((d.nextOpen - d.vwap) / d.vwap) * 10000 : null;
     const vsClose = d.vwap && d.nextClose ? ((d.nextClose - d.vwap) / d.vwap) * 10000 : null;
+    const dirQuality = getRawDirectionalQuality(d);
     
     document.getElementById('modalSymbol').textContent = d.symbol;
     document.getElementById('modalCompany').textContent = d.company;
@@ -1924,9 +1987,25 @@ function showPositionModal(symbol, date) {
                 <strong>Executions</strong>
                 <div class="val">${formatNumber(d.executions)}</div>
             </div>
+        </div>
+        
+        <!-- HIGHLIGHTED: Directional Execution Quality -->
+        <div style="background: ${dirQuality >= 0 ? 'linear-gradient(135deg, rgba(52, 211, 153, 0.15) 0%, rgba(52, 211, 153, 0.05) 100%)' : 'linear-gradient(135deg, rgba(248, 113, 113, 0.15) 0%, rgba(248, 113, 113, 0.05) 100%)'}; border: 1px solid ${dirQuality >= 0 ? 'rgba(52, 211, 153, 0.3)' : 'rgba(248, 113, 113, 0.3)'}; border-radius: 10px; padding: 1.25rem; margin: 1rem 0; text-align: center;">
+            <div style="font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+                Directional Execution Quality
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 2rem; font-weight: 700; color: ${dirQuality >= 0 ? 'var(--success)' : 'var(--danger)'};">
+                ${dirQuality >= 0 ? '+' : ''}${dirQuality.toFixed(1)} bps
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                ${dirQuality >= 0 ? '✓ Favorable execution vs next-day open' : '✗ Unfavorable execution vs next-day open'}
+            </div>
+        </div>
+        
+        <div class="modal-grid">
             <div class="modal-stat">
-                <strong>Timing Diff</strong>
-                <div class="val ${getValueClass(d.timingDiff)}">${formatBps(d.timingDiff, true)}</div>
+                <strong>Raw Timing Diff</strong>
+                <div class="val muted">${formatBps(d.timingDiff, true)}</div>
             </div>
             <div class="modal-stat">
                 <strong>Reference Gap</strong>
