@@ -433,6 +433,7 @@ function renderSummaryTab() {
                             <th>Observations</th>
                             <th>Notional</th>
                             <th>% of Total</th>
+                            <th>Avg Exec Quality</th>
                             <th>Avg Timing Diff</th>
                             <th>Continuity Rate</th>
                         </tr>
@@ -456,6 +457,7 @@ function renderSummaryTab() {
                             <th>Observations</th>
                             <th>Notional</th>
                             <th>% of Total</th>
+                            <th>Avg Exec Quality</th>
                             <th>Avg Size</th>
                             <th>Continuity Rate</th>
                         </tr>
@@ -635,11 +637,12 @@ function renderSummaryTables() {
     const assetStats = {};
     FILTERED_DATA.forEach(d => {
         if (!assetStats[d.assetType]) {
-            assetStats[d.assetType] = { count: 0, notional: 0, timingSum: 0, consistent: 0 };
+            assetStats[d.assetType] = { count: 0, notional: 0, timingSum: 0, dirQualitySum: 0, consistent: 0 };
         }
         assetStats[d.assetType].count++;
         assetStats[d.assetType].notional += d.notional;
         assetStats[d.assetType].timingSum += getTimingDiff(d);
+        assetStats[d.assetType].dirQualitySum += getDirectionalQuality(d);
         if (d.dirConsistency) assetStats[d.assetType].consistent++;
     });
     
@@ -648,6 +651,7 @@ function renderSummaryTables() {
         .sort((a, b) => b[1].notional - a[1].notional)
         .map(([type, stats]) => {
             const avgTiming = stats.timingSum / stats.count;
+            const avgDirQuality = stats.dirQualitySum / stats.count;
             const contRate = (stats.consistent / stats.count) * 100;
             return `
                 <tr>
@@ -655,7 +659,8 @@ function renderSummaryTables() {
                     <td>${formatNumber(stats.count)}</td>
                     <td class="mono">${formatCurrency(stats.notional, true)}</td>
                     <td>${formatPercent(stats.notional / totalNotional * 100)}</td>
-                    <td class="${getValueClass(avgTiming)} mono">${formatBps(avgTiming, true)}</td>
+                    <td class="${getValueClass(avgDirQuality)} mono" style="font-weight: 600;">${formatBps(avgDirQuality, true)}</td>
+                    <td class="muted mono">${formatBps(avgTiming, true)}</td>
                     <td class="positive">${formatPercent(contRate)}</td>
                 </tr>
             `;
@@ -681,6 +686,7 @@ function renderSummaryTables() {
         const tierNotional = tierData.reduce((sum, d) => sum + d.notional, 0);
         const tierConsistent = tierData.filter(d => d.dirConsistency).length;
         const avgSize = tierData.length > 0 ? tierNotional / tierData.length : 0;
+        const avgDirQuality = tierData.length > 0 ? tierData.reduce((sum, d) => sum + getDirectionalQuality(d), 0) / tierData.length : 0;
         const contRate = tierData.length > 0 ? (tierConsistent / tierData.length) * 100 : 0;
         
         return `
@@ -689,6 +695,7 @@ function renderSummaryTables() {
                 <td>${formatNumber(tierData.length)}</td>
                 <td class="mono">${formatCurrency(tierNotional, true)}</td>
                 <td>${formatPercent(tierNotional / totalNotional * 100)}</td>
+                <td class="${getValueClass(avgDirQuality)} mono" style="font-weight: 600;">${formatBps(avgDirQuality, true)}</td>
                 <td class="mono">${formatCurrency(avgSize, true)}</td>
                 <td class="positive">${formatPercent(contRate)}</td>
             </tr>
@@ -1182,6 +1189,7 @@ function renderStructureTab() {
                             <th>Leverage Multiple</th>
                             <th>Observations</th>
                             <th>Notional</th>
+                            <th>Avg Exec Quality</th>
                             <th>Avg Timing Diff</th>
                             <th>Avg Ref Gap</th>
                             <th>Continuity Rate</th>
@@ -1206,6 +1214,7 @@ function renderStructureTab() {
                                 <th>Sector</th>
                                 <th>Observations</th>
                                 <th>Notional</th>
+                                <th>Avg Exec Quality</th>
                                 <th>Avg Timing Diff</th>
                                 <th>Continuity Rate</th>
                             </tr>
@@ -1361,11 +1370,12 @@ function renderStructureTables() {
     etfData.forEach(d => {
         const lev = d.leverageMult || '1x';
         if (!leverageStats[lev]) {
-            leverageStats[lev] = { count: 0, notional: 0, timingSum: 0, refGapSum: 0, consistent: 0 };
+            leverageStats[lev] = { count: 0, notional: 0, timingSum: 0, dirQualitySum: 0, refGapSum: 0, consistent: 0 };
         }
         leverageStats[lev].count++;
         leverageStats[lev].notional += d.notional;
         leverageStats[lev].timingSum += getTimingDiff(d);
+        leverageStats[lev].dirQualitySum += getDirectionalQuality(d);
         leverageStats[lev].refGapSum += getRefGap(d);
         if (d.dirConsistency) leverageStats[lev].consistent++;
     });
@@ -1379,6 +1389,7 @@ function renderStructureTables() {
     
     document.getElementById('structureLeverageTable').innerHTML = sortedLeverage.map(([lev, stats]) => {
         const avgTiming = stats.timingSum / stats.count;
+        const avgDirQuality = stats.dirQualitySum / stats.count;
         const avgRefGap = stats.refGapSum / stats.count;
         const contRate = stats.consistent / stats.count * 100;
         return `
@@ -1386,7 +1397,8 @@ function renderStructureTables() {
                 <td style="font-weight: 600;">${lev}</td>
                 <td>${formatNumber(stats.count)}</td>
                 <td class="mono">${formatCurrency(stats.notional, true)}</td>
-                <td class="mono ${getValueClass(avgTiming)}">${formatBps(avgTiming, true)}</td>
+                <td class="mono ${getValueClass(avgDirQuality)}" style="font-weight: 600;">${formatBps(avgDirQuality, true)}</td>
+                <td class="mono muted">${formatBps(avgTiming, true)}</td>
                 <td class="mono ${getValueClass(avgRefGap)}">${formatBps(avgRefGap, true)}</td>
                 <td class="positive">${formatPercent(contRate)}</td>
             </tr>
@@ -1397,11 +1409,12 @@ function renderStructureTables() {
     const sectorStats = {};
     FILTERED_DATA.forEach(d => {
         if (!sectorStats[d.sector]) {
-            sectorStats[d.sector] = { count: 0, notional: 0, timingSum: 0, consistent: 0 };
+            sectorStats[d.sector] = { count: 0, notional: 0, timingSum: 0, dirQualitySum: 0, consistent: 0 };
         }
         sectorStats[d.sector].count++;
         sectorStats[d.sector].notional += d.notional;
         sectorStats[d.sector].timingSum += getTimingDiff(d);
+        sectorStats[d.sector].dirQualitySum += getDirectionalQuality(d);
         if (d.dirConsistency) sectorStats[d.sector].consistent++;
     });
     
@@ -1409,13 +1422,15 @@ function renderStructureTables() {
     
     document.getElementById('structureSectorTable').innerHTML = sortedSectors.map(([sector, stats]) => {
         const avgTiming = stats.timingSum / stats.count;
+        const avgDirQuality = stats.dirQualitySum / stats.count;
         const contRate = stats.consistent / stats.count * 100;
         return `
             <tr>
                 <td style="font-weight: 500;">${sector.substring(0, 30)}</td>
                 <td>${formatNumber(stats.count)}</td>
                 <td class="mono">${formatCurrency(stats.notional, true)}</td>
-                <td class="mono ${getValueClass(avgTiming)}">${formatBps(avgTiming, true)}</td>
+                <td class="mono ${getValueClass(avgDirQuality)}" style="font-weight: 600;">${formatBps(avgDirQuality, true)}</td>
+                <td class="mono muted">${formatBps(avgTiming, true)}</td>
                 <td class="positive">${formatPercent(contRate)}</td>
             </tr>
         `;
