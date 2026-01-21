@@ -122,10 +122,10 @@ function applyFilters() {
 // ============================================================================
 
 function switchTab(tabId) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-button').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     
-    document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+    document.querySelector(`.tab-button[onclick="switchTab('${tabId}')"]`).classList.add('active');
     document.getElementById(tabId).classList.add('active');
     
     CURRENT_TAB = tabId;
@@ -1077,8 +1077,15 @@ function renderDataExplorer() {
                 ${row.referenceGap.toFixed(1)} bps
             </td>
             <td style="text-align: center;">${row.directionalConsistency}</td>
-            <td><button onclick="event.stopPropagation(); showPositionModalEnhanced(${JSON.stringify(row).replace(/"/g, '&quot;')})">View</button></td>
+            <td><button class="view-btn">View</button></td>
         `;
+        
+        const viewBtn = tr.querySelector('.view-btn');
+        viewBtn.onclick = (e) => {
+            e.stopPropagation();
+            showPositionModalEnhanced(row);
+        };
+        
         tbody.appendChild(tr);
     });
     
