@@ -3,1004 +3,652 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sapinover Research | Overnight Price Drift Analysis</title>
+    <title>Sapinover Overnight Trading Analysis</title>
+    
+    <!-- Plotly -->
     <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        :root{--slate-900:#0f172a;--slate-800:#1e293b;--slate-700:#334155;--slate-600:#475569;--slate-500:#64748b;--slate-400:#94a3b8;--slate-300:#cbd5e1;--slate-200:#e2e8f0;--slate-100:#f1f5f9;--slate-50:#f8fafc;--amber-600:#d97706;--amber-500:#f59e0b;--amber-400:#fbbf24;--amber-100:#fef3c7;--emerald-600:#059669;--emerald-500:#10b981;--rose-600:#e11d48;--rose-500:#f43f5e;--sky-500:#0ea5e9;--q1-color:#ea580c;--q2-color:#059669;--q3-color:#0284c7;--q4-color:#dc2626;--font-display:'Cormorant Garamond',Georgia,serif;--font-body:'Source Sans 3',-apple-system,BlinkMacSystemFont,sans-serif}
-        body{font-family:var(--font-body);background:var(--slate-100);color:var(--slate-800);line-height:1.5;min-height:100vh}
-        .header{background:linear-gradient(135deg,var(--slate-900) 0%,var(--slate-800) 50%,var(--slate-700) 100%);color:white;padding:20px 40px;border-bottom:4px solid var(--amber-500);box-shadow:0 4px 20px rgba(0,0,0,0.15);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
-        .brand{display:flex;align-items:center;gap:20px}
-        .brand img{height:40px;width:auto}
-        .brand-text h1{font-family:var(--font-display);font-size:22px;font-weight:600;letter-spacing:-0.5px;color:var(--amber-400)}
-        .brand-text .tagline{font-size:11px;color:var(--slate-400);letter-spacing:1.5px;text-transform:uppercase}
-        .header-meta{text-align:right}
-        .header-meta .date-range{font-family:var(--font-display);font-size:18px;color:var(--amber-500);font-weight:500}
-        .header-meta .update-info{font-size:11px;color:var(--slate-400);margin-top:2px}
-        .main-container{display:flex;min-height:calc(100vh - 88px)}
-        .sidebar{width:300px;background:white;border-right:1px solid var(--slate-200);padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:20px;box-shadow:4px 0 12px rgba(0,0,0,0.03)}
-        .filter-section h3{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--slate-800);margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--amber-500);display:flex;align-items:center;gap:8px}
-        .filter-section h3 i{color:var(--amber-500);font-size:13px}
-        .filter-group{margin-bottom:14px}
-        .filter-group label{display:block;font-size:10px;font-weight:700;color:var(--slate-500);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
-        select,input[type="text"],input[type="number"]{width:100%;padding:10px 12px;border:1px solid var(--slate-200);border-radius:6px;font-family:var(--font-body);font-size:13px;color:var(--slate-800);background:white;transition:border-color 0.2s,box-shadow 0.2s}
-        select:focus,input:focus{outline:none;border-color:var(--amber-500);box-shadow:0 0 0 3px var(--amber-100)}
-        .date-range-toggle{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--slate-500);cursor:pointer}
-        .date-range-toggle input[type="checkbox"]{width:auto;accent-color:var(--amber-500)}
-        .date-range-inputs{display:none;gap:8px;margin-top:10px}
-        .date-range-inputs.active{display:flex}
-        .date-range-inputs select{flex:1}
-        .filter-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-        .chip{padding:5px 10px;background:var(--slate-100);border:1px solid var(--slate-200);border-radius:20px;font-size:11px;color:var(--slate-600);cursor:pointer;transition:all 0.2s}
-        .chip:hover{background:var(--slate-200)}
-        .chip.active{background:var(--amber-500);border-color:var(--amber-500);color:white}
-        .btn-reset{width:100%;padding:10px;background:var(--slate-100);border:1px solid var(--slate-300);border-radius:6px;font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--slate-600);cursor:pointer;transition:all 0.2s;margin-top:10px}
-        .btn-reset:hover{background:var(--slate-200)}
-        .view-toggle{display:flex;gap:4px;background:var(--slate-100);padding:4px;border-radius:6px;margin-top:10px}
-        .view-toggle button{flex:1;padding:8px;border:none;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;background:transparent;color:var(--slate-600)}
-        .view-toggle button.active{background:var(--amber-500);color:white}
-        .content{flex:1;padding:24px;overflow-y:auto}
-        .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:24px}
-        .kpi-card{background:white;border-radius:10px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid var(--slate-200)}
-        .kpi-card .label{font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
-        .kpi-card .value{font-family:var(--font-display);font-size:26px;font-weight:600;color:var(--slate-800)}
-        .kpi-card .value.positive{color:var(--emerald-600)}
-        .kpi-card .value.negative{color:var(--rose-600)}
-        .kpi-card .subtext{font-size:11px;color:var(--slate-500);margin-top:4px}
-        .tabs{display:flex;gap:4px;background:var(--slate-200);padding:4px;border-radius:8px;margin-bottom:20px}
-        .tab-btn{flex:1;padding:10px 16px;background:transparent;border:none;border-radius:6px;font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--slate-600);cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px}
-        .tab-btn:hover{color:var(--slate-800)}
-        .tab-btn.active{background:white;color:var(--slate-800);box-shadow:0 2px 4px rgba(0,0,0,0.08)}
-        .tab-btn i{font-size:12px}
-        .panel{display:none}
-        .panel.active{display:block}
-        .chart-container{background:white;border-radius:10px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid var(--slate-200)}
-        .chart-container h4{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--slate-800);margin-bottom:16px;display:flex;align-items:center;gap:10px}
-        .chart-container h4 i{color:var(--amber-500);font-size:14px}
-        .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-        @media(max-width:1200px){.chart-row{grid-template-columns:1fr}}
-        .table-container{background:white;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid var(--slate-200);overflow:hidden}
-        .table-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--slate-200)}
-        .table-header h4{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--slate-800);display:flex;align-items:center;gap:10px}
-        .table-header h4 i{color:var(--amber-500)}
-        .btn-export{padding:8px 14px;background:var(--slate-100);border:1px solid var(--slate-300);border-radius:6px;font-size:12px;font-weight:600;color:var(--slate-600);cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s}
-        .btn-export:hover{background:var(--slate-200)}
-        .data-table{width:100%;border-collapse:collapse}
-        .data-table th{background:var(--slate-50);padding:12px 16px;text-align:left;font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--slate-200);cursor:pointer;white-space:nowrap}
-        .data-table th:hover{background:var(--slate-100)}
-        .data-table th i{margin-left:6px;font-size:10px}
-        .data-table td{padding:12px 16px;border-bottom:1px solid var(--slate-100);font-size:13px}
-        .data-table tr:hover{background:var(--slate-50);cursor:pointer}
-        .data-table .symbol{font-weight:700;color:var(--slate-800)}
-        .data-table .company{font-size:11px;color:var(--slate-500)}
-        .data-table .mono{font-family:'SF Mono','Consolas',monospace;font-size:12px}
-        .data-table .positive{color:var(--emerald-600);font-weight:600}
-        .data-table .negative{color:var(--rose-600);font-weight:600}
-        .badge{display:inline-block;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:700}
-        .badge-stock{background:var(--sky-500);color:white}
-        .badge-etf{background:var(--amber-500);color:white}
-        .badge-success{background:var(--emerald-500);color:white}
-        .badge-fail{background:var(--rose-500);color:white}
-        .table-footer{padding:12px 20px;background:var(--slate-50);border-top:1px solid var(--slate-200);display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--slate-500)}
-        .pagination{display:flex;gap:4px}
-        .pagination button{padding:6px 12px;background:white;border:1px solid var(--slate-300);border-radius:4px;font-size:12px;cursor:pointer;transition:all 0.2s}
-        .pagination button:hover{background:var(--slate-100)}
-        .pagination button.active{background:var(--amber-500);border-color:var(--amber-500);color:white}
-        .pagination button:disabled{opacity:0.5;cursor:not-allowed}
-        .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:200;justify-content:center;align-items:center}
-        .modal-overlay.active{display:flex}
-        .modal{background:white;border-radius:12px;width:90%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
-        .modal-header{padding:20px 24px;border-bottom:1px solid var(--slate-200);display:flex;justify-content:space-between;align-items:flex-start}
-        .modal-header .symbol-info h2{font-family:var(--font-display);font-size:28px;font-weight:700;color:var(--slate-800)}
-        .modal-header .symbol-info .company-name{font-size:14px;color:var(--slate-500);margin-top:2px}
-        .modal-close{width:36px;height:36px;border:none;background:var(--slate-100);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--slate-500);transition:all 0.2s}
-        .modal-close:hover{background:var(--slate-200);color:var(--slate-700)}
-        .modal-body{padding:24px}
-        .modal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
-        .modal-stat{background:var(--slate-50);padding:12px;border-radius:6px}
-        .modal-stat .label{font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;margin-bottom:4px}
-        .modal-stat .value{font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--slate-800)}
-        .result-box{padding:12px;border-radius:6px;margin-top:12px}
-        .result-box.success{background:#f0fdf4;border:1px solid #bbf7d0}
-        .result-box.fail{background:#fef2f2;border:1px solid #fecaca}
-        .result-box .title{font-weight:700;margin-bottom:4px}
-        .result-box.success .title{color:#166534}
-        .result-box.fail .title{color:#991b1b}
-        .result-box .desc{font-size:13px}
-        .result-box.success .desc{color:#14532d}
-        .result-box.fail .desc{color:#7f1d1d}
-        .quadrant-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--slate-200)}
-        .legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--slate-600)}
-        .legend-dot{width:10px;height:10px;border-radius:50%}
-        .legend-dot.q1{background:var(--q1-color)}
-        .legend-dot.q2{background:var(--q2-color)}
-        .legend-dot.q3{background:var(--q3-color)}
-        .legend-dot.q4{background:var(--q4-color)}
-        .disclaimer{margin-top:40px;padding:20px;background:var(--slate-50);border-radius:8px;border:1px solid var(--slate-200)}
-        .disclaimer h5{font-size:11px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
-        .disclaimer p{font-size:11px;color:var(--slate-500);line-height:1.6}
-        .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;color:var(--slate-500)}
-        .loading-spinner{width:40px;height:40px;border:3px solid var(--slate-200);border-top-color:var(--amber-500);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @media(max-width:900px){.main-container{flex-direction:column}.sidebar{width:100%;border-right:none;border-bottom:1px solid var(--slate-200)}.header{flex-direction:column;gap:16px;text-align:center}.header-meta{text-align:center}.kpi-row{grid-template-columns:repeat(2,1fr)}}
-        .info-tooltip{position:relative;display:inline-block;margin-left:4px;cursor:help}
-        .info-tooltip i{font-size:10px;color:var(--slate-400)}
-        .info-tooltip:hover::after{content:attr(data-tip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:var(--slate-800);color:white;padding:8px 12px;border-radius:6px;font-size:11px;white-space:nowrap;z-index:100}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary-black: #1A1A1A;
+            --charcoal: #2D2D2D;
+            --pure-white: #FFFFFF;
+            --light-gray: #F5F5F5;
+            --medium-gray: #6B7280;
+            --border-gray: #E5E7EB;
+            --subtle-gray: #F9FAFB;
+            --accent-blue: #3B82F6;
+            --success-green: #10B981;
+            --alert-red: #EF4444;
+            --q1-color: #059669;
+            --q2-color: #D97706;
+            --q3-color: #DC2626;
+            --q4-color: #7C3AED;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif;
+            background: var(--light-gray);
+            color: var(--primary-black);
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: var(--primary-black);
+            color: var(--pure-white);
+            padding: 20px 40px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .header-content {
+            max-width: 1920px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        
+        .logo-container {
+            height: 50px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo-container img {
+            height: 100%;
+            width: auto;
+        }
+        
+        .header-text h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .header-text .subtitle {
+            font-size: 13px;
+            opacity: 0.85;
+            font-weight: 400;
+        }
+        
+        .header-meta {
+            text-align: right;
+            font-size: 12px;
+            opacity: 0.75;
+        }
+        
+        .tab-navigation {
+            background: var(--pure-white);
+            border-bottom: 2px solid var(--border-gray);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .tab-nav-container {
+            max-width: 1920px;
+            margin: 0 auto;
+            display: flex;
+            overflow-x: auto;
+        }
+        
+        .tab-button {
+            padding: 14px 20px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            color: var(--medium-gray);
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .tab-button:hover {
+            background: var(--subtle-gray);
+            color: var(--primary-black);
+        }
+        
+        .tab-button.active {
+            color: var(--primary-black);
+            border-bottom-color: var(--primary-black);
+            background: var(--subtle-gray);
+        }
+        
+        .tab-button i { font-size: 14px; }
+        
+        .container {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .filter-panel {
+            background: var(--pure-white);
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            border: 1px solid var(--border-gray);
+        }
+        
+        .filter-panel h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--primary-black);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .filter-group label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--medium-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .filter-group select,
+        .filter-group input {
+            padding: 10px 12px;
+            border: 1px solid var(--border-gray);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            background: var(--pure-white);
+        }
+        
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--primary-black);
+        }
+        
+        .toggle-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .toggle-btn {
+            padding: 8px 16px;
+            background: var(--light-gray);
+            border: 1px solid var(--border-gray);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            color: var(--medium-gray);
+        }
+        
+        .toggle-btn:hover {
+            background: var(--subtle-gray);
+            border-color: var(--charcoal);
+        }
+        
+        .toggle-btn.active {
+            background: var(--primary-black);
+            color: var(--pure-white);
+            border-color: var(--primary-black);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: var(--pure-white);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--charcoal);
+        }
+        
+        .stat-card.success { border-left-color: var(--success-green); }
+        .stat-card.warning { border-left-color: var(--q2-color); }
+        .stat-card.danger { border-left-color: var(--alert-red); }
+        
+        .stat-card .label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--medium-gray);
+            margin-bottom: 8px;
+        }
+        
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-black);
+        }
+        
+        .positive { color: var(--success-green); }
+        .negative { color: var(--alert-red); }
+        
+        .chart-container {
+            background: var(--pure-white);
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            border: 1px solid var(--border-gray);
+        }
+        
+        .chart-container h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--primary-black);
+        }
+        
+        .chart-container .chart {
+            min-height: 400px;
+        }
+        
+        .data-table-container {
+            background: var(--pure-white);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid var(--border-gray);
+        }
+        
+        .table-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .table-header h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--primary-black);
+        }
+        
+        .table-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .search-box {
+            padding: 8px 12px;
+            border: 1px solid var(--border-gray);
+            border-radius: 6px;
+            font-size: 14px;
+            width: 250px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table thead {
+            background: var(--light-gray);
+        }
+        
+        .data-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--medium-gray);
+            border-bottom: 2px solid var(--border-gray);
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .data-table th:hover {
+            background: var(--subtle-gray);
+        }
+        
+        .data-table td {
+            padding: 12px 16px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-gray);
+        }
+        
+        .data-table tbody tr:hover {
+            background: var(--subtle-gray);
+            cursor: pointer;
+        }
+        
+        .pagination {
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-gray);
+        }
+        
+        .pagination-info {
+            font-size: 13px;
+            color: var(--medium-gray);
+        }
+        
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .pagination-btn {
+            padding: 6px 12px;
+            background: var(--light-gray);
+            border: 1px solid var(--border-gray);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--primary-black);
+            color: var(--pure-white);
+            border-color: var(--primary-black);
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pagination-btn.active {
+            background: var(--primary-black);
+            color: var(--pure-white);
+            border-color: var(--primary-black);
+        }
+        
+        .info-box {
+            background: var(--subtle-gray);
+            border-left: 4px solid var(--charcoal);
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+        
+        .info-box.warning {
+            background: #FEF3C7;
+            border-left-color: var(--q2-color);
+        }
+        
+        .quadrant-legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        
+        .quadrant-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        
+        .quadrant-legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        
+        .q1-bg { background: var(--q1-color); }
+        .q2-bg { background: var(--q2-color); }
+        .q3-bg { background: var(--q3-color); }
+        .q4-bg { background: var(--q4-color); }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background-color: var(--pure-white);
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 900px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-black);
+        }
+        
+        .close {
+            font-size: 28px;
+            font-weight: 300;
+            color: var(--medium-gray);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .close:hover { color: var(--alert-red); }
+        
+        .modal-body {
+            padding: 24px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .detail-item .label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--medium-gray);
+        }
+        
+        .detail-item .value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-black);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background: var(--primary-black);
+            color: var(--pure-white);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            background: var(--charcoal);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+        
+        .btn-secondary {
+            background: var(--light-gray);
+            color: var(--primary-black);
+            border: 1px solid var(--border-gray);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--border-gray);
+            transform: none;
+        }
+        
+        @media (max-width: 768px) {
+            .container { padding: 20px; }
+            .header { padding: 20px; }
+            .header-content { flex-direction: column; align-items: flex-start; gap: 12px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .filter-grid { grid-template-columns: 1fr; }
+            .detail-grid { grid-template-columns: 1fr; }
+            .tab-button { font-size: 12px; padding: 12px 16px; }
+        }
+        
+        .text-center { text-align: center; }
+        .mb-16 { margin-bottom: 16px; }
+        .mb-24 { margin-bottom: 24px; }
+        .mt-16 { margin-top: 16px; }
     </style>
 </head>
 <body>
-    <header class="header">
-        <div class="brand">
-            <div class="brand-text">
-                <h1>Overnight Price Drift Analysis</h1>
-                <div class="tagline">Sapinover Research • Market Microstructure Analysis</div>
+    <div class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="logo-container">
+                    <img src="FullLogo_NoBuffer__1_.png" alt="Sapinover">
+                </div>
+                <div class="header-text">
+                    <h1>Overnight Trading Analysis</h1>
+                    <div class="subtitle">Quantitative Analysis of Overnight Equity Trading Intervals</div>
+                </div>
+            </div>
+            <div class="header-meta">
+                <div id="dateRangeDisplay">Loading...</div>
+                <div id="dataGenerated">Generated: --</div>
             </div>
         </div>
-        <div class="header-meta">
-            <div class="date-range" id="headerDateRange">Loading...</div>
-            <div class="update-info" id="headerUpdateInfo"></div>
-        </div>
-    </header>
-    
-    <div class="main-container">
-        <aside class="sidebar">
-            <div class="filter-section">
-                <h3><i class="fas fa-filter"></i> Filters</h3>
-                <div class="filter-group">
-                    <label>Trading Date</label>
-                    <select id="filterDate"><option value="all">All Days (Aggregate)</option></select>
-                    <label class="date-range-toggle"><input type="checkbox" id="dateRangeToggle"> Custom Date Range</label>
-                    <div class="date-range-inputs" id="dateRangeInputs">
-                        <select id="filterDateStart"></select>
-                        <span style="color:var(--slate-400)">→</span>
-                        <select id="filterDateEnd"></select>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <label>View Mode</label>
-                    <div class="view-toggle">
-                        <button class="active" data-view="observations">Observations</button>
-                        <button data-view="symbols">By Symbol</button>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <label>Asset Type</label>
-                    <select id="filterAssetType"><option value="all">All Assets</option><option value="Stock">Stocks</option><option value="ETF">ETFs</option></select>
-                </div>
-                <div class="filter-group" id="sectorFilterGroup">
-                    <label>Sector</label>
-                    <select id="filterSector"><option value="all">All Sectors</option></select>
-                </div>
-                <div class="filter-group" id="etfFilterGroup">
-                    <label>ETF Category</label>
-                    <select id="filterETFCategory"><option value="all">All Categories</option></select>
-                </div>
-                <div class="filter-group">
-                    <label>Leverage</label>
-                    <div class="filter-chips" id="leverageChips">
-                        <span class="chip active" data-value="all">All</span>
-                        <span class="chip" data-value="1x">1x</span>
-                        <span class="chip" data-value="2x">2x</span>
-                        <span class="chip" data-value="3x">3x</span>
-                        <span class="chip" data-value="inverse">Inverse</span>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <label>Timing Differential (bps)</label>
-                    <select id="filterDifferential"><option value="all">All Observations</option><option value="positive">Positive Only (≥0)</option><option value="negative">Negative Only (<0)</option></select>
-                </div>
-                <div class="filter-group">
-                    <label>Symbol Search</label>
-                    <input type="text" id="filterSymbol" placeholder="e.g., TSLA, NVDA...">
-                </div>
-                <button class="btn-reset" id="btnReset"><i class="fas fa-undo"></i> Reset All Filters</button>
-            </div>
-            <div class="filter-section">
-                <h3><i class="fas fa-chart-pie"></i> Quick Stats</h3>
-                <div id="quickStats" style="font-size:12px;color:var(--slate-600)">
-                    <div style="margin-bottom:8px"><strong>Showing:</strong> <span id="qsCount">-</span></div>
-                    <div style="margin-bottom:8px"><strong>Notional:</strong> <span id="qsNotional">-</span></div>
-                    <div><strong>Symbols:</strong> <span id="qsSymbols">-</span></div>
-                </div>
-            </div>
-        </aside>
-        
-        <main class="content">
-            <div class="loading" id="loadingState"><div class="loading-spinner"></div><div>Loading data...</div></div>
-            <div id="dashboardContent" style="display:none">
-                <div class="kpi-row">
-                    <div class="kpi-card"><div class="label">Total Notional</div><div class="value" id="kpiNotional">-</div><div class="subtext" id="kpiNotionalSub"></div></div>
-                    <div class="kpi-card"><div class="label" id="kpiObsLabel">Observations</div><div class="value" id="kpiObs">-</div><div class="subtext" id="kpiObsSub"></div></div>
-                    <div class="kpi-card"><div class="label">Unique Symbols</div><div class="value" id="kpiSymbols">-</div><div class="subtext" id="kpiSymbolsSub"></div></div>
-                    <div class="kpi-card"><div class="label">Directional Consistency</div><div class="value" id="kpiContinuity">-</div><div class="subtext">Same-direction observations</div></div>
-                    <div class="kpi-card"><div class="label">Median Timing Diff<span class="info-tooltip" data-tip="(Pₜ - Pᵥ) / Pₐ × 10,000"><i class="fas fa-info-circle"></i></span></div><div class="value" id="kpiDiff">-</div><div class="subtext">bps</div></div>
-                    <div class="kpi-card"><div class="label">Wtd Avg Timing Diff</div><div class="value" id="kpiWtdDiff">-</div><div class="subtext">Notional-weighted (bps)</div></div>
-                </div>
-                
-                <div class="tabs">
-                    <button class="tab-btn active" data-tab="overview"><i class="fas fa-tachometer-alt"></i> Overview</button>
-                    <button class="tab-btn" data-tab="analysis"><i class="fas fa-chart-line"></i> Drift Analysis</button>
-                    <button class="tab-btn" data-tab="breakdown"><i class="fas fa-sitemap"></i> Breakdown</button>
-                    <button class="tab-btn" data-tab="explorer"><i class="fas fa-table"></i> Data Explorer</button>
-                </div>
-                
-                <div class="panel active" id="panel-overview">
-                    <div class="chart-container"><h4><i class="fas fa-chart-bar"></i> Daily Volume & Timing Differential Trend</h4><div id="chartTrend" style="height:350px"></div></div>
-                    <div class="chart-row">
-                        <div class="chart-container"><h4><i class="fas fa-chart-pie"></i> Asset Type Distribution</h4><div id="chartAssetType" style="height:300px"></div></div>
-                        <div class="chart-container"><h4><i class="fas fa-layer-group"></i> Leverage Distribution</h4><div id="chartLeverage" style="height:300px"></div></div>
-                    </div>
-                </div>
-                
-                <div class="panel" id="panel-analysis">
-                    <div class="chart-container">
-                        <h4><i class="fas fa-crosshairs"></i> Interval Position Analysis: Reference Gap vs Timing Differential (bps)</h4>
-                        <div id="chartScatter" style="height:450px"></div>
-                        <div class="quadrant-legend">
-                            <div class="legend-item"><span class="legend-dot q1"></span> Q1: Gap Up + Positive Differential</div>
-                            <div class="legend-item"><span class="legend-dot q2"></span> Q2: Gap Up + Negative Differential</div>
-                            <div class="legend-item"><span class="legend-dot q3"></span> Q3: Gap Down + Positive Differential</div>
-                            <div class="legend-item"><span class="legend-dot q4"></span> Q4: Gap Down + Negative Differential</div>
-                        </div>
-                    </div>
-                    <div class="chart-row">
-                        <div class="chart-container"><h4><i class="fas fa-chart-area"></i> Timing Differential Distribution (bps)</h4><div id="chartDiffHist" style="height:300px"></div></div>
-                        <div class="chart-container"><h4><i class="fas fa-check-circle"></i> Directional Consistency by Asset Type</h4><div id="chartConsistency" style="height:300px"></div></div>
-                    </div>
-                </div>
-                
-                <div class="panel" id="panel-breakdown">
-                    <div class="chart-container"><h4><i class="fas fa-th-large"></i> Sector/Category Treemap (by Notional)</h4><div id="chartTreemap" style="height:400px"></div></div>
-                    <div class="chart-row">
-                        <div class="chart-container"><h4><i class="fas fa-trophy"></i> Top 10 by Notional</h4><div id="chartTop10" style="height:350px"></div></div>
-                        <div class="chart-container"><h4><i class="fas fa-balance-scale"></i> Timing Differential by Leverage (bps)</h4><div id="chartLeveragePerf" style="height:350px"></div></div>
-                    </div>
-                </div>
-                
-                <div class="panel" id="panel-explorer">
-                    <div class="table-container">
-                        <div class="table-header">
-                            <h4><i class="fas fa-database"></i> <span id="tableTitle">Observation Data</span></h4>
-                            <div class="table-actions"><button class="btn-export" id="btnExportCSV"><i class="fas fa-download"></i> Export CSV</button></div>
-                        </div>
-                        <div style="overflow-x:auto">
-                            <table class="data-table" id="dataTable">
-                                <thead id="tableHead"></thead>
-                                <tbody id="tableBody"></tbody>
-                            </table>
-                        </div>
-                        <div class="table-footer"><span id="tableInfo">Showing 0 of 0</span><div class="pagination" id="pagination"></div></div>
-                    </div>
-                </div>
-                
-                <div class="disclaimer">
-                    <h5>Research Disclaimer</h5>
-                    <p>This analysis constitutes independent research on market microstructure and execution timing patterns. Timing differential metrics represent geometric positioning within overnight price intervals: <strong>Timing Differential = (Pₜ - Pᵥ) / Pₐ × 10,000 bps</strong> where Pₐ = prior close (anchor), Pₜ = next open (terminal), Pᵥ = overnight VWAP. This is not investment advice. Past observations do not predict future outcomes. Sapinover LLC conducts independent market microstructure research.</p>
-                    <p style="margin-top:8px;font-size:10px;color:var(--slate-400)"><i class="fas fa-database"></i> Data Sources: Trade data collected daily from venue operations. Market data sourced from publicly available APIs. Future releases will incorporate additional venue data from alternative trading systems.</p>
-                </div>
-            </div>
-        </main>
     </div>
     
-    <div class="modal-overlay" id="modalOverlay">
-        <div class="modal">
+    <div class="tab-navigation">
+        <div class="tab-nav-container">
+            <button class="tab-button active" onclick="switchTab('tab1')">
+                <i class="fas fa-chart-line"></i> Summary
+            </button>
+            <button class="tab-button" onclick="switchTab('tab2')">
+                <i class="fas fa-calendar-day"></i> Daily
+            </button>
+            <button class="tab-button" onclick="switchTab('tab3')">
+                <i class="fas fa-chart-bar"></i> Aggregate
+            </button>
+            <button class="tab-button" onclick="switchTab('tab4')">
+                <i class="fas fa-pie-chart"></i> Distribution
+            </button>
+            <button class="tab-button" onclick="switchTab('tab5')">
+                <i class="fas fa-bullseye"></i> Differential Metrics
+            </button>
+            <button class="tab-button" onclick="switchTab('tab6')">
+                <i class="fas fa-project-diagram"></i> Statistical
+            </button>
+            <button class="tab-button" onclick="switchTab('tab7')">
+                <i class="fas fa-table"></i> Data Explorer
+            </button>
+            <button class="tab-button" onclick="switchTab('tab8')">
+                <i class="fas fa-book"></i> Methodology
+            </button>
+            <button class="tab-button" onclick="switchTab('tab9')">
+                <i class="fas fa-layer-group"></i> Configuration
+            </button>
+        </div>
+    </div>
+
+    <div class="container" id="mainContainer">
+        <!-- Content will be dynamically inserted -->
+    </div>
+    
+    <div id="positionModal" class="modal">
+        <div class="modal-content">
             <div class="modal-header">
-                <div class="symbol-info"><h2 id="modalSymbol">-</h2><div class="company-name" id="modalCompany">-</div></div>
-                <button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button>
+                <h2 id="modalTitle">Position Details</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
             </div>
             <div class="modal-body">
-                <div style="margin-bottom:16px"><span class="badge" id="modalAssetBadge">-</span><span style="margin-left:8px;font-size:13px;color:var(--slate-500)" id="modalMeta">-</span></div>
-                <div class="modal-stats">
-                    <div class="modal-stat"><div class="label">Notional</div><div class="value" id="modalNotional">-</div></div>
-                    <div class="modal-stat"><div class="label">Timing Diff</div><div class="value" id="modalDiff">-</div></div>
-                    <div class="modal-stat"><div class="label">Reference Gap</div><div class="value" id="modalReference">-</div></div>
-                </div>
-                <div class="result-box" id="modalResult"><div class="title" id="modalResultTitle">-</div><div class="desc" id="modalResultDesc">-</div></div>
+                <div class="detail-grid" id="modalDetails"></div>
             </div>
         </div>
     </div>
-
-<script>
-// ===================== DATA =====================
-let RAW_DATA = [], SYMBOLS = [], SECTORS = [], ETF_CATEGORIES = [], METADATA = {}, FILTERED = [], AGGREGATED = [];
-let viewMode = 'observations';
-const QUAD_COLORS = {Q1:'#ea580c', Q2:'#059669', Q3:'#0284c7', Q4:'#dc2626'};
-const PLOT_LAYOUT = {font:{family:'Source Sans 3'}, paper_bgcolor:'transparent', plot_bgcolor:'transparent', margin:{t:20,r:20,b:40,l:50}};
-const PLOT_CONFIG = {displayModeBar:false, responsive:true};
-let currentSort = {key:'notional', asc:false}, currentPage = 1;
-const PAGE_SIZE = 50;
-
-// ===================== LOAD DATA =====================
-async function loadData() {
-    try {
-        // Try fetching external file first
-        let json;
-        try {
-            const response = await fetch('data.json');
-            if (!response.ok) throw new Error('Fetch failed');
-            json = await response.json();
-        } catch(e) {
-            // If fetch fails, check for embedded data
-            if (typeof EMBEDDED_DATA !== 'undefined') {
-                json = EMBEDDED_DATA;
-            } else {
-                throw new Error('No data source available');
-            }
-        }
-        
-        METADATA = json.meta;
-        SECTORS = json.sectors;
-        ETF_CATEGORIES = json.etf_categories;
-        SYMBOLS = json.symbols;
-        
-        RAW_DATA = json.data.map(row => {
-            const sym = SYMBOLS[row[0]];
-            return {
-                symbol: sym[0],
-                company: sym[1],
-                asset_type: sym[2],
-                sector: SECTORS[sym[3]] || 'Other',
-                etf_category: ETF_CATEGORIES[sym[4]] || '',
-                leverage: sym[5],
-                date: row[1],
-                notional: row[2],
-                volume: row[3],
-                executions: row[4],
-                reference_gap_bps: row[5],
-                timing_differential_bps: row[6],
-                directional_consistency: row[7],
-                gap_dir: row[8]
-            };
-        });
-        
-        initializeUI();
-        applyFilters();
-        document.getElementById('loadingState').style.display = 'none';
-        document.getElementById('dashboardContent').style.display = 'block';
-    } catch(error) {
-        console.error('Failed to load data:', error);
-        document.getElementById('loadingState').innerHTML = '<div style="color:#dc2626"><i class="fas fa-exclamation-triangle" style="font-size:32px;margin-bottom:16px"></i><div>Failed to load data. Please ensure data.json is in the same folder and you\'re running via a local server (e.g., python -m http.server).</div></div>';
-    }
-}
-
-// ===================== UI INITIALIZATION =====================
-function initializeUI() {
-    // Header
-    document.getElementById('headerDateRange').textContent = `${formatDate(METADATA.date_range[0])} – ${formatDate(METADATA.date_range[1])}`;
-    document.getElementById('headerUpdateInfo').textContent = `${METADATA.trading_days} trading days • Generated ${METADATA.generated}`;
     
-    // Date dropdowns
-    const dateSelect = document.getElementById('filterDate');
-    const dateStart = document.getElementById('filterDateStart');
-    const dateEnd = document.getElementById('filterDateEnd');
-    METADATA.dates.forEach(d => {
-        dateSelect.innerHTML += `<option value="${d}">${formatDate(d)}</option>`;
-        dateStart.innerHTML += `<option value="${d}">${formatDate(d)}</option>`;
-        dateEnd.innerHTML += `<option value="${d}">${formatDate(d)}</option>`;
-    });
-    dateEnd.value = METADATA.dates[METADATA.dates.length - 1];
-    
-    // Sector dropdown
-    const sectorSelect = document.getElementById('filterSector');
-    SECTORS.filter(s => s && s !== 'ETF').forEach(s => {
-        sectorSelect.innerHTML += `<option value="${s}">${s}</option>`;
-    });
-    
-    // ETF Category dropdown
-    const etfSelect = document.getElementById('filterETFCategory');
-    ETF_CATEGORIES.filter(c => c).forEach(c => {
-        etfSelect.innerHTML += `<option value="${c}">${c}</option>`;
-    });
-    
-    // Event listeners
-    document.getElementById('filterDate').addEventListener('change', applyFilters);
-    document.getElementById('filterAssetType').addEventListener('change', () => { updateFilterVisibility(); applyFilters(); });
-    document.getElementById('filterSector').addEventListener('change', applyFilters);
-    document.getElementById('filterETFCategory').addEventListener('change', applyFilters);
-    document.getElementById('filterDifferential').addEventListener('change', applyFilters);
-    document.getElementById('filterSymbol').addEventListener('input', debounce(applyFilters, 300));
-    
-    document.getElementById('dateRangeToggle').addEventListener('change', (e) => {
-        document.getElementById('dateRangeInputs').classList.toggle('active', e.target.checked);
-        applyFilters();
-    });
-    document.getElementById('filterDateStart').addEventListener('change', applyFilters);
-    document.getElementById('filterDateEnd').addEventListener('change', applyFilters);
-    
-    // Leverage chips
-    document.querySelectorAll('#leverageChips .chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            document.querySelectorAll('#leverageChips .chip').forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-            applyFilters();
-        });
-    });
-    
-    // View toggle
-    document.querySelectorAll('.view-toggle button').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            viewMode = btn.dataset.view;
-            applyFilters();
-        });
-    });
-    
-    // Tab buttons
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
-        });
-    });
-    
-    // Reset button
-    document.getElementById('btnReset').addEventListener('click', resetFilters);
-    
-    // Export CSV
-    document.getElementById('btnExportCSV').addEventListener('click', exportCSV);
-    
-    // Modal
-    document.getElementById('modalClose').addEventListener('click', closeModal);
-    document.getElementById('modalOverlay').addEventListener('click', (e) => {
-        if (e.target === document.getElementById('modalOverlay')) closeModal();
-    });
-    
-    updateFilterVisibility();
-}
-
-function updateFilterVisibility() {
-    const assetType = document.getElementById('filterAssetType').value;
-    document.getElementById('sectorFilterGroup').style.display = (assetType === 'ETF') ? 'none' : 'block';
-    document.getElementById('etfFilterGroup').style.display = (assetType === 'Stock') ? 'none' : 'block';
-}
-
-function resetFilters() {
-    document.getElementById('filterDate').value = 'all';
-    document.getElementById('filterAssetType').value = 'all';
-    document.getElementById('filterSector').value = 'all';
-    document.getElementById('filterETFCategory').value = 'all';
-    document.getElementById('filterDifferential').value = 'all';
-    document.getElementById('filterSymbol').value = '';
-    document.getElementById('dateRangeToggle').checked = false;
-    document.getElementById('dateRangeInputs').classList.remove('active');
-    document.querySelectorAll('#leverageChips .chip').forEach(c => c.classList.remove('active'));
-    document.querySelector('#leverageChips .chip[data-value="all"]').classList.add('active');
-    updateFilterVisibility();
-    applyFilters();
-}
-
-// ===================== FILTERING =====================
-function applyFilters() {
-    const dateVal = document.getElementById('filterDate').value;
-    const dateRangeEnabled = document.getElementById('dateRangeToggle').checked;
-    const dateStart = document.getElementById('filterDateStart').value;
-    const dateEnd = document.getElementById('filterDateEnd').value;
-    const assetType = document.getElementById('filterAssetType').value;
-    const sector = document.getElementById('filterSector').value;
-    const etfCategory = document.getElementById('filterETFCategory').value;
-    const differential = document.getElementById('filterDifferential').value;
-    const symbolSearch = document.getElementById('filterSymbol').value.toUpperCase().trim();
-    const leverage = document.querySelector('#leverageChips .chip.active').dataset.value;
-    
-    FILTERED = RAW_DATA.filter(row => {
-        // Date filter
-        if (dateRangeEnabled) {
-            if (row.date < dateStart || row.date > dateEnd) return false;
-        } else if (dateVal !== 'all' && row.date !== dateVal) return false;
-        
-        // Asset type
-        if (assetType !== 'all' && row.asset_type !== assetType) return false;
-        
-        // Sector (for stocks)
-        if (sector !== 'all' && row.asset_type === 'Stock' && row.sector !== sector) return false;
-        
-        // ETF Category
-        if (etfCategory !== 'all' && row.asset_type === 'ETF' && row.etf_category !== etfCategory) return false;
-        
-        // Leverage
-        if (leverage !== 'all') {
-            if (leverage === 'inverse') {
-                if (!row.leverage.toLowerCase().includes('inverse') && !row.leverage.startsWith('-')) return false;
-            } else {
-                if (row.leverage !== leverage) return false;
-            }
-        }
-        
-        // Differential
-        if (differential === 'positive' && row.timing_differential_bps < 0) return false;
-        if (differential === 'negative' && row.timing_differential_bps >= 0) return false;
-        
-        // Symbol search
-        if (symbolSearch && !row.symbol.includes(symbolSearch)) return false;
-        
-        return true;
-    });
-    
-    // Aggregate by symbol if needed
-    if (viewMode === 'symbols') {
-        const symbolMap = new Map();
-        FILTERED.forEach(row => {
-            if (!symbolMap.has(row.symbol)) {
-                symbolMap.set(row.symbol, {
-                    symbol: row.symbol,
-                    company: row.company,
-                    asset_type: row.asset_type,
-                    sector: row.sector,
-                    etf_category: row.etf_category,
-                    leverage: row.leverage,
-                    notional: 0,
-                    volume: 0,
-                    executions: 0,
-                    timing_differential_sum: 0,
-                    reference_gap_sum: 0,
-                    consistency_count: 0,
-                    count: 0
-                });
-            }
-            const agg = symbolMap.get(row.symbol);
-            agg.notional += row.notional;
-            agg.volume += row.volume;
-            agg.executions += row.executions;
-            agg.timing_differential_sum += row.timing_differential_bps * row.notional;
-            agg.reference_gap_sum += row.reference_gap_bps * row.notional;
-            if (row.directional_consistency) agg.consistency_count++;
-            agg.count++;
-        });
-        
-        AGGREGATED = Array.from(symbolMap.values()).map(agg => ({
-            ...agg,
-            timing_differential_bps: agg.notional > 0 ? agg.timing_differential_sum / agg.notional : 0,
-            reference_gap_bps: agg.notional > 0 ? agg.reference_gap_sum / agg.notional : 0,
-            directional_consistency: agg.consistency_count / agg.count,
-            observations: agg.count
-        }));
-    }
-    
-    updateKPIs();
-    updateQuickStats();
-    renderCharts();
-    currentPage = 1;
-    renderTable();
-}
-
-// ===================== KPIs =====================
-function updateKPIs() {
-    const data = viewMode === 'symbols' ? AGGREGATED : FILTERED;
-    const totalNotional = data.reduce((sum, r) => sum + r.notional, 0);
-    const uniqueSymbols = new Set(data.map(r => r.symbol)).size;
-    const obsCount = viewMode === 'symbols' ? data.reduce((sum, r) => sum + (r.observations || 1), 0) : data.length;
-    
-    // Consistency
-    let consistencyRate;
-    if (viewMode === 'symbols') {
-        const totalObs = data.reduce((sum, r) => sum + (r.observations || 1), 0);
-        const consistentObs = data.reduce((sum, r) => sum + (r.consistency_count || (r.directional_consistency ? r.observations : 0)), 0);
-        consistencyRate = totalObs > 0 ? consistentObs / totalObs : 0;
-    } else {
-        consistencyRate = data.length > 0 ? data.filter(r => r.directional_consistency).length / data.length : 0;
-    }
-    
-    // Median timing diff
-    const diffs = data.map(r => r.timing_differential_bps).sort((a, b) => a - b);
-    const medianDiff = diffs.length > 0 ? diffs[Math.floor(diffs.length / 2)] : 0;
-    
-    // Weighted average
-    const wtdDiff = totalNotional > 0 ? data.reduce((sum, r) => sum + r.timing_differential_bps * r.notional, 0) / totalNotional : 0;
-    
-    document.getElementById('kpiNotional').textContent = formatCurrency(totalNotional);
-    document.getElementById('kpiNotionalSub').textContent = `${data.length} ${viewMode === 'symbols' ? 'symbols' : 'observations'}`;
-    
-    document.getElementById('kpiObsLabel').textContent = viewMode === 'symbols' ? 'Total Observations' : 'Observations';
-    document.getElementById('kpiObs').textContent = formatNumber(obsCount);
-    document.getElementById('kpiObsSub').textContent = `${METADATA.trading_days} trading days`;
-    
-    document.getElementById('kpiSymbols').textContent = formatNumber(uniqueSymbols);
-    document.getElementById('kpiSymbolsSub').textContent = `Across filtered data`;
-    
-    document.getElementById('kpiContinuity').textContent = (consistencyRate * 100).toFixed(1) + '%';
-    
-    const diffEl = document.getElementById('kpiDiff');
-    diffEl.textContent = medianDiff.toFixed(1);
-    diffEl.className = 'value ' + (medianDiff >= 0 ? 'positive' : 'negative');
-    
-    const wtdEl = document.getElementById('kpiWtdDiff');
-    wtdEl.textContent = wtdDiff.toFixed(1);
-    wtdEl.className = 'value ' + (wtdDiff >= 0 ? 'positive' : 'negative');
-}
-
-function updateQuickStats() {
-    const data = viewMode === 'symbols' ? AGGREGATED : FILTERED;
-    document.getElementById('qsCount').textContent = formatNumber(data.length) + (viewMode === 'symbols' ? ' symbols' : ' obs');
-    document.getElementById('qsNotional').textContent = formatCurrency(data.reduce((sum, r) => sum + r.notional, 0));
-    document.getElementById('qsSymbols').textContent = formatNumber(new Set(data.map(r => r.symbol)).size);
-}
-
-// ===================== CHARTS =====================
-function renderCharts() {
-    renderTrendChart();
-    renderAssetTypeChart();
-    renderLeverageChart();
-    renderScatterChart();
-    renderDiffHistogram();
-    renderConsistencyChart();
-    renderTreemap();
-    renderTop10Chart();
-    renderLeveragePerfChart();
-}
-
-function renderTrendChart() {
-    const dailyData = {};
-    FILTERED.forEach(row => {
-        if (!dailyData[row.date]) {
-            dailyData[row.date] = { notional: 0, diffSum: 0, count: 0 };
-        }
-        dailyData[row.date].notional += row.notional;
-        dailyData[row.date].diffSum += row.timing_differential_bps;
-        dailyData[row.date].count++;
-    });
-    
-    const dates = Object.keys(dailyData).sort();
-    const notionals = dates.map(d => dailyData[d].notional);
-    const avgDiffs = dates.map(d => dailyData[d].diffSum / dailyData[d].count);
-    
-    const traces = [
-        {
-            x: dates, y: notionals, type: 'bar', name: 'Notional ($)',
-            marker: { color: '#f59e0b' }, yaxis: 'y'
-        },
-        {
-            x: dates, y: avgDiffs, type: 'scatter', mode: 'lines+markers', name: 'Avg Timing Diff (bps)',
-            line: { color: '#0ea5e9', width: 2 }, marker: { size: 6 }, yaxis: 'y2'
-        }
-    ];
-    
-    const layout = {
-        ...PLOT_LAYOUT,
-        showlegend: true, legend: { orientation: 'h', y: 1.12 },
-        yaxis: { title: 'Notional ($)', gridcolor: '#e2e8f0', zeroline: false },
-        yaxis2: { title: 'Avg Timing Diff (bps)', overlaying: 'y', side: 'right', gridcolor: 'transparent', zeroline: true, zerolinecolor: '#cbd5e1' },
-        xaxis: { tickformat: '%b %d', gridcolor: '#e2e8f0' }
-    };
-    
-    Plotly.newPlot('chartTrend', traces, layout, PLOT_CONFIG);
-}
-
-function renderAssetTypeChart() {
-    const data = viewMode === 'symbols' ? AGGREGATED : FILTERED;
-    const typeCounts = {};
-    data.forEach(r => {
-        const t = r.asset_type || 'Unknown';
-        typeCounts[t] = (typeCounts[t] || 0) + r.notional;
-    });
-    
-    Plotly.newPlot('chartAssetType', [{
-        values: Object.values(typeCounts),
-        labels: Object.keys(typeCounts),
-        type: 'pie',
-        marker: { colors: ['#0ea5e9', '#f59e0b', '#64748b'] },
-        textinfo: 'label+percent',
-        hole: 0.4
-    }], { ...PLOT_LAYOUT, showlegend: false }, PLOT_CONFIG);
-}
-
-function renderLeverageChart() {
-    const data = viewMode === 'symbols' ? AGGREGATED : FILTERED;
-    const levCounts = {};
-    data.forEach(r => {
-        const l = r.leverage || '1x';
-        levCounts[l] = (levCounts[l] || 0) + r.notional;
-    });
-    
-    const sorted = Object.entries(levCounts).sort((a, b) => b[1] - a[1]);
-    
-    Plotly.newPlot('chartLeverage', [{
-        x: sorted.map(s => s[0]),
-        y: sorted.map(s => s[1]),
-        type: 'bar',
-        marker: { color: '#f59e0b' }
-    }], { ...PLOT_LAYOUT, xaxis: { title: 'Leverage' }, yaxis: { title: 'Notional ($)', gridcolor: '#e2e8f0' } }, PLOT_CONFIG);
-}
-
-function renderScatterChart() {
-    const data = (viewMode === 'symbols' ? AGGREGATED : FILTERED).slice(0, 2000); // Limit for performance
-    
-    const getQuadrant = (ref, diff) => {
-        if (ref >= 0 && diff >= 0) return 'Q1';
-        if (ref >= 0 && diff < 0) return 'Q2';
-        if (ref < 0 && diff >= 0) return 'Q3';
-        return 'Q4';
-    };
-    
-    const quadrants = { Q1: [], Q2: [], Q3: [], Q4: [] };
-    data.forEach(r => {
-        const q = getQuadrant(r.reference_gap_bps, r.timing_differential_bps);
-        quadrants[q].push(r);
-    });
-    
-    const traces = Object.entries(quadrants).map(([q, rows]) => ({
-        x: rows.map(r => r.reference_gap_bps),
-        y: rows.map(r => r.timing_differential_bps),
-        text: rows.map(r => r.symbol),
-        mode: 'markers',
-        type: 'scatter',
-        name: q,
-        marker: { color: QUAD_COLORS[q], size: 6, opacity: 0.6 }
-    }));
-    
-    Plotly.newPlot('chartScatter', traces, {
-        ...PLOT_LAYOUT,
-        xaxis: { title: 'Reference Gap (bps)', zeroline: true, zerolinecolor: '#94a3b8', gridcolor: '#e2e8f0' },
-        yaxis: { title: 'Timing Differential (bps)', zeroline: true, zerolinecolor: '#94a3b8', gridcolor: '#e2e8f0' },
-        showlegend: false
-    }, PLOT_CONFIG);
-}
-
-function renderDiffHistogram() {
-    const data = viewMode === 'symbols' ? AGGREGATED : FILTERED;
-    const diffs = data.map(r => r.timing_differential_bps).filter(d => Math.abs(d) < 500); // Filter outliers
-    
-    Plotly.newPlot('chartDiffHist', [{
-        x: diffs, type: 'histogram', nbinsx: 50,
-        marker: { color: '#f59e0b' }
-    }], {
-        ...PLOT_LAYOUT,
-        xaxis: { title: 'Timing Differential (bps)', gridcolor: '#e2e8f0' },
-        yaxis: { title: 'Count', gridcolor: '#e2e8f0' },
-        shapes: [{ type: 'line', x0: 0, x1: 0, y0: 0, y1: 1, yref: 'paper', line: { color: '#dc2626', dash: 'dash' } }]
-    }, PLOT_CONFIG);
-}
-
-function renderConsistencyChart() {
-    const data = viewMode === 'symbols' ? AGGREGATED : FILTERED;
-    const byType = {};
-    data.forEach(r => {
-        const t = r.asset_type || 'Unknown';
-        if (!byType[t]) byType[t] = { consistent: 0, total: 0 };
-        byType[t].total++;
-        if (r.directional_consistency) byType[t].consistent++;
-    });
-    
-    const types = Object.keys(byType);
-    const rates = types.map(t => (byType[t].consistent / byType[t].total * 100).toFixed(1));
-    
-    Plotly.newPlot('chartConsistency', [{
-        x: types, y: rates, type: 'bar',
-        marker: { color: '#10b981' },
-        text: rates.map(r => r + '%'), textposition: 'outside'
-    }], { ...PLOT_LAYOUT, yaxis: { title: 'Consistency Rate (%)', gridcolor: '#e2e8f0', range: [0, 100] } }, PLOT_CONFIG);
-}
-
-function renderTreemap() {
-    const data = viewMode === 'symbols' ? AGGREGATED : FILTERED;
-    const groupField = document.getElementById('filterAssetType').value === 'ETF' ? 'etf_category' : 'sector';
-    
-    const groups = {};
-    data.forEach(r => {
-        const g = r[groupField] || 'Other';
-        groups[g] = (groups[g] || 0) + r.notional;
-    });
-    
-    const sorted = Object.entries(groups).sort((a, b) => b[1] - a[1]).slice(0, 20);
-    
-    Plotly.newPlot('chartTreemap', [{
-        type: 'treemap',
-        labels: sorted.map(s => s[0]),
-        parents: sorted.map(() => ''),
-        values: sorted.map(s => s[1]),
-        textinfo: 'label+value',
-        marker: { colors: sorted.map((_, i) => `hsl(${40 + i * 10}, 70%, 50%)`) }
-    }], { ...PLOT_LAYOUT, margin: { t: 10, r: 10, b: 10, l: 10 } }, PLOT_CONFIG);
-}
-
-function renderTop10Chart() {
-    const data = viewMode === 'symbols' ? AGGREGATED : FILTERED;
-    const symbolTotals = {};
-    data.forEach(r => {
-        symbolTotals[r.symbol] = (symbolTotals[r.symbol] || 0) + r.notional;
-    });
-    
-    const top10 = Object.entries(symbolTotals).sort((a, b) => b[1] - a[1]).slice(0, 10);
-    
-    Plotly.newPlot('chartTop10', [{
-        y: top10.map(s => s[0]).reverse(),
-        x: top10.map(s => s[1]).reverse(),
-        type: 'bar', orientation: 'h',
-        marker: { color: '#f59e0b' }
-    }], { ...PLOT_LAYOUT, xaxis: { title: 'Notional ($)', gridcolor: '#e2e8f0' }, margin: { ...PLOT_LAYOUT.margin, l: 80 } }, PLOT_CONFIG);
-}
-
-function renderLeveragePerfChart() {
-    const data = viewMode === 'symbols' ? AGGREGATED : FILTERED;
-    const byLev = {};
-    data.forEach(r => {
-        const l = r.leverage || '1x';
-        if (!byLev[l]) byLev[l] = { sum: 0, notional: 0 };
-        byLev[l].sum += r.timing_differential_bps * r.notional;
-        byLev[l].notional += r.notional;
-    });
-    
-    const leverages = Object.keys(byLev).sort();
-    const avgDiffs = leverages.map(l => byLev[l].notional > 0 ? byLev[l].sum / byLev[l].notional : 0);
-    
-    Plotly.newPlot('chartLeveragePerf', [{
-        x: leverages, y: avgDiffs, type: 'bar',
-        marker: { color: avgDiffs.map(d => d >= 0 ? '#10b981' : '#ef4444') }
-    }], { ...PLOT_LAYOUT, yaxis: { title: 'Avg Timing Diff (bps)', gridcolor: '#e2e8f0', zeroline: true, zerolinecolor: '#94a3b8' } }, PLOT_CONFIG);
-}
-
-// ===================== TABLE =====================
-function renderTable() {
-    const data = viewMode === 'symbols' ? AGGREGATED : FILTERED;
-    const sorted = [...data].sort((a, b) => {
-        const aVal = a[currentSort.key], bVal = b[currentSort.key];
-        if (typeof aVal === 'string') return currentSort.asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-        return currentSort.asc ? aVal - bVal : bVal - aVal;
-    });
-    
-    const start = (currentPage - 1) * PAGE_SIZE;
-    const pageData = sorted.slice(start, start + PAGE_SIZE);
-    
-    // Header
-    const columns = viewMode === 'symbols' 
-        ? [['symbol','Symbol'],['asset_type','Type'],['notional','Notional'],['observations','Obs'],['timing_differential_bps','Timing Diff'],['reference_gap_bps','Ref Gap'],['directional_consistency','Consistency']]
-        : [['symbol','Symbol'],['date','Date'],['asset_type','Type'],['notional','Notional'],['timing_differential_bps','Timing Diff'],['reference_gap_bps','Ref Gap'],['directional_consistency','Consistent']];
-    
-    document.getElementById('tableHead').innerHTML = '<tr>' + columns.map(([key, label]) => 
-        `<th data-key="${key}">${label} <i class="fas fa-sort"></i></th>`
-    ).join('') + '</tr>';
-    
-    // Body
-    document.getElementById('tableBody').innerHTML = pageData.map(row => `
-        <tr data-symbol="${row.symbol}">
-            <td><div class="symbol">${row.symbol}</div><div class="company">${row.company || ''}</div></td>
-            ${viewMode === 'observations' ? `<td>${formatDate(row.date)}</td>` : ''}
-            <td><span class="badge ${row.asset_type === 'ETF' ? 'badge-etf' : 'badge-stock'}">${row.asset_type}</span></td>
-            <td class="mono">${formatCurrency(row.notional)}</td>
-            ${viewMode === 'symbols' ? `<td class="mono">${row.observations || '-'}</td>` : ''}
-            <td class="mono ${row.timing_differential_bps >= 0 ? 'positive' : 'negative'}">${row.timing_differential_bps.toFixed(1)}</td>
-            <td class="mono">${row.reference_gap_bps.toFixed(1)}</td>
-            <td>${viewMode === 'symbols' 
-                ? (typeof row.directional_consistency === 'number' ? (row.directional_consistency * 100).toFixed(0) + '%' : '-')
-                : (row.directional_consistency ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-fail">No</span>')}</td>
-        </tr>
-    `).join('');
-    
-    // Sort listeners
-    document.querySelectorAll('#tableHead th').forEach(th => {
-        th.addEventListener('click', () => {
-            const key = th.dataset.key;
-            if (currentSort.key === key) currentSort.asc = !currentSort.asc;
-            else { currentSort.key = key; currentSort.asc = false; }
-            renderTable();
-        });
-    });
-    
-    // Row click
-    document.querySelectorAll('#tableBody tr').forEach(tr => {
-        tr.addEventListener('click', () => showModal(tr.dataset.symbol));
-    });
-    
-    // Footer
-    document.getElementById('tableInfo').textContent = `Showing ${start + 1}-${Math.min(start + PAGE_SIZE, sorted.length)} of ${sorted.length}`;
-    renderPagination(sorted.length);
-    document.getElementById('tableTitle').textContent = viewMode === 'symbols' ? 'Symbol Aggregates' : 'Observation Data';
-}
-
-function renderPagination(total) {
-    const totalPages = Math.ceil(total / PAGE_SIZE);
-    const pag = document.getElementById('pagination');
-    pag.innerHTML = '';
-    
-    if (totalPages <= 1) return;
-    
-    const addBtn = (label, page, disabled = false) => {
-        const btn = document.createElement('button');
-        btn.textContent = label;
-        btn.disabled = disabled;
-        if (page === currentPage) btn.classList.add('active');
-        btn.addEventListener('click', () => { currentPage = page; renderTable(); });
-        pag.appendChild(btn);
-    };
-    
-    addBtn('«', 1, currentPage === 1);
-    addBtn('‹', currentPage - 1, currentPage === 1);
-    
-    const start = Math.max(1, currentPage - 2);
-    const end = Math.min(totalPages, currentPage + 2);
-    for (let i = start; i <= end; i++) addBtn(i, i);
-    
-    addBtn('›', currentPage + 1, currentPage === totalPages);
-    addBtn('»', totalPages, currentPage === totalPages);
-}
-
-// ===================== MODAL =====================
-function showModal(symbol) {
-    const data = viewMode === 'symbols' ? AGGREGATED : FILTERED;
-    const row = data.find(r => r.symbol === symbol);
-    if (!row) return;
-    
-    document.getElementById('modalSymbol').textContent = row.symbol;
-    document.getElementById('modalCompany').textContent = row.company || 'N/A';
-    
-    const badge = document.getElementById('modalAssetBadge');
-    badge.textContent = row.asset_type;
-    badge.className = 'badge ' + (row.asset_type === 'ETF' ? 'badge-etf' : 'badge-stock');
-    
-    document.getElementById('modalMeta').textContent = `${row.sector || row.etf_category || 'N/A'} • ${row.leverage}`;
-    document.getElementById('modalNotional').textContent = formatCurrency(row.notional);
-    document.getElementById('modalDiff').textContent = row.timing_differential_bps.toFixed(1) + ' bps';
-    document.getElementById('modalReference').textContent = row.reference_gap_bps.toFixed(1) + ' bps';
-    
-    const resultBox = document.getElementById('modalResult');
-    const isConsistent = viewMode === 'symbols' ? (row.directional_consistency > 0.5) : row.directional_consistency;
-    resultBox.className = 'result-box ' + (isConsistent ? 'success' : 'fail');
-    document.getElementById('modalResultTitle').textContent = isConsistent ? 'Directionally Consistent' : 'Directionally Inconsistent';
-    document.getElementById('modalResultDesc').textContent = isConsistent 
-        ? 'Price movement continued in the same direction through the overnight session.'
-        : 'Price movement reversed direction during the overnight session.';
-    
-    document.getElementById('modalOverlay').classList.add('active');
-}
-
-function closeModal() {
-    document.getElementById('modalOverlay').classList.remove('active');
-}
-
-// ===================== EXPORT =====================
-function exportCSV() {
-    const data = viewMode === 'symbols' ? AGGREGATED : FILTERED;
-    const headers = viewMode === 'symbols'
-        ? ['Symbol','Company','Type','Sector','ETF Category','Leverage','Notional','Observations','Timing Diff (bps)','Reference Gap (bps)','Consistency Rate']
-        : ['Symbol','Company','Date','Type','Sector','ETF Category','Leverage','Notional','Volume','Executions','Timing Diff (bps)','Reference Gap (bps)','Consistent','Gap Direction'];
-    
-    const rows = data.map(r => viewMode === 'symbols'
-        ? [r.symbol, r.company, r.asset_type, r.sector, r.etf_category, r.leverage, r.notional, r.observations, r.timing_differential_bps.toFixed(2), r.reference_gap_bps.toFixed(2), (r.directional_consistency * 100).toFixed(1) + '%']
-        : [r.symbol, r.company, r.date, r.asset_type, r.sector, r.etf_category, r.leverage, r.notional, r.volume, r.executions, r.timing_differential_bps.toFixed(2), r.reference_gap_bps.toFixed(2), r.directional_consistency ? 'Yes' : 'No', r.gap_dir]
-    );
-    
-    const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `sapinover_overnight_data_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-
-// ===================== UTILITIES =====================
-function formatCurrency(val) {
-    if (val >= 1e9) return '$' + (val / 1e9).toFixed(2) + 'B';
-    if (val >= 1e6) return '$' + (val / 1e6).toFixed(2) + 'M';
-    if (val >= 1e3) return '$' + (val / 1e3).toFixed(1) + 'K';
-    return '$' + val.toFixed(0);
-}
-
-function formatNumber(val) {
-    return val.toLocaleString();
-}
-
-function formatDate(dateStr) {
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function debounce(fn, delay) {
-    let timeout;
-    return (...args) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => fn(...args), delay);
-    };
-}
-
-// ===================== INIT =====================
-console.log('Sapinover Drift Dashboard loaded. Loading data...');
-loadData();
-</script>
+    <script src="sapinover_dashboard.js"></script>
 </body>
 </html>
