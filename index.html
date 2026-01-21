@@ -580,6 +580,189 @@
         .mb-16 { margin-bottom: 16px; }
         .mb-24 { margin-bottom: 24px; }
         .mt-16 { margin-top: 16px; }
+        
+        /* Quadrant Table Styling */
+        .quadrant-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: var(--pure-white);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        
+        .quadrant-table thead {
+            background: var(--light-gray);
+        }
+        
+        .quadrant-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--medium-gray);
+            border-bottom: 2px solid var(--border-gray);
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .quadrant-table th:hover {
+            background: var(--subtle-gray);
+        }
+        
+        .quadrant-table tbody tr {
+            border-bottom: 1px solid var(--border-gray);
+            transition: background 0.15s;
+        }
+        
+        .quadrant-table tbody tr:hover {
+            background: var(--subtle-gray);
+        }
+        
+        .quadrant-table td {
+            padding: 12px 16px;
+            font-size: 14px;
+            color: var(--primary-black);
+        }
+        
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .mode-toggle button {
+            padding: 10px 20px;
+            background: var(--light-gray);
+            border: 1px solid var(--border-gray);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            color: var(--primary-black);
+        }
+        
+        .mode-toggle button:hover {
+            background: var(--subtle-gray);
+            border-color: var(--charcoal);
+        }
+        
+        .mode-toggle button.active {
+            background: var(--primary-black);
+            color: var(--pure-white);
+            border-color: var(--primary-black);
+        }
+        
+        .table-container {
+            background: var(--pure-white);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+            margin: 20px 0;
+            border: 1px solid var(--border-gray);
+        }
+        
+        .table-container table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .table-container thead {
+            background: var(--light-gray);
+        }
+        
+        .table-container th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--medium-gray);
+            border-bottom: 2px solid var(--border-gray);
+        }
+        
+        .table-container tbody tr {
+            border-bottom: 1px solid var(--border-gray);
+            transition: background 0.15s;
+        }
+        
+        .table-container tbody tr:hover {
+            background: var(--subtle-gray);
+        }
+        
+        .table-container td {
+            padding: 12px 16px;
+            font-size: 14px;
+            color: var(--primary-black);
+        }
+        
+        .pagination {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 0;
+        }
+        
+        .pagination button {
+            padding: 8px 16px;
+            background: var(--light-gray);
+            border: 1px solid var(--border-gray);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .pagination button:hover {
+            background: var(--charcoal);
+            color: var(--pure-white);
+            border-color: var(--charcoal);
+        }
+        
+        .pagination span {
+            font-size: 14px;
+            color: var(--medium-gray);
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            padding: 10px 20px;
+            background: var(--primary-black);
+            color: var(--pure-white);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background: var(--charcoal);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--medium-gray);
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-black);
+        }
     </style>
 </head>
 <body>
@@ -649,6 +832,6 @@
         </div>
     </div>
     
-    <script src="sapinover_dashboard_COMPLETE.js"></script>
+    <script src="sapinover_dashboard_ENHANCED.js"></script>
 </body>
 </html>
