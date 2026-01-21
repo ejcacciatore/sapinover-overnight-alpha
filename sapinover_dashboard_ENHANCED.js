@@ -34,48 +34,134 @@ window.addEventListener('DOMContentLoaded', async function() {
 
 async function loadData() {
     try {
+        console.log('Loading data from: BlueOcean_Dashboard_20251201_20260116.json');
         const response = await fetch('BlueOcean_Dashboard_20251201_20260116.json');
-        return await response.json();
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Data loaded successfully:', {
+            hasData: !!data.data,
+            dataLength: data.data?.length,
+            hasSymbols: !!data.symbols,
+            hasDimensions: !!data.dimensions,
+            hasMeta: !!data.meta
+        });
+        
+        return data;
     } catch (error) {
         console.error('Error loading data:', error);
-        document.getElementById('mainContainer').innerHTML = 
-            '<div class="info-box warning"><strong>Error:</strong> Could not load data file. Ensure BlueOcean_Dashboard_20251201_20260116.json is in the same directory.</div>';
+        
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'info-box warning';
+        errorMsg.innerHTML = `
+            <h3><i class="fas fa-exclamation-triangle"></i> Error Loading Data</h3>
+            <p><strong>Could not load:</strong> BlueOcean_Dashboard_20251201_20260116.json</p>
+            <p><strong>Error:</strong> ${error.message}</p>
+            <hr style="margin: 15px 0; border: none; border-top: 1px solid #ccc;">
+            <p><strong>Required file:</strong> BlueOcean_Dashboard_20251201_20260116.json</p>
+            <p><strong>Location:</strong> Must be in the same directory as index.html</p>
+            <p><strong>Expected JSON structure:</strong></p>
+            <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto;">
+{
+  "data": [[symbol, date, notional, volume, executions, timingDiff, refGap, priorClose, vwap, nextOpen, nextClose, directional], ...],
+  "symbols": {
+    "SYMBOL": ["Company Name", null, "Stock/ETF", sectorIndex, "Sector Name"],
+    ...
+  },
+  "dimensions": {
+    "sectors": ["Technology", "Healthcare", ...],
+    "etf_categories": ["Equity", "Fixed Income", ...]
+  },
+  "meta": {
+    "date_range": ["2024-12-01", "2025-01-16"],
+    "trading_days": 30,
+    "generated": "2025-01-20",
+    "dates": ["2024-12-01", "2024-12-02", ...]
+  }
+}
+            </pre>
+        `;
+        
+        document.getElementById('mainContainer').innerHTML = '';
+        document.getElementById('mainContainer').appendChild(errorMsg);
         return null;
     }
 }
 
 function processData(rawData) {
+    // Check if data exists in expected format
+    if (!rawData || !rawData.data) {
+        console.error('Invalid data format. Expected: { data: [...], symbols: {...}, ... }');
+        console.log('Received data:', rawData);
+        alert('Data file format is incorrect. Please check the JSON structure.');
+        return [];
+    }
+    
     return rawData.data.map(row => {
-        const symbolInfo = rawData.symbols[row[0]];
+        const symbolInfo = rawData.symbols ? rawData.symbols[row[0]] : null;
+        
+        // Handle missing symbol info
+        if (!symbolInfo) {
+            console.warn('Missing symbol info for:', row[0]);
+            return {
+                symbol: row[0],
+                companyName: 'Unknown',
+                assetType: 'Unknown',
+                sector: 'Unknown',
+                date: row[1],
+                notional: row[2] || 0,
+                volume: row[3] || 0,
+                executions: row[4] || 0,
+                timingDifferential: (row[5] || 0) * -1,
+                referenceGap: row[6] || 0,
+                priorClose: row[7] || 0,
+                vwap: row[8] || 0,
+                nextOpen: row[9] || 0,
+                nextClose: row[10] || 0,
+                directionalConsistency: row[11] === 1 ? '✓' : '✗'
+            };
+        }
+        
         const sectorIdx = symbolInfo[3];
         
         // FIX: Invert timing differential (formula was backwards)
-        const timingDifferential = row[5] * -1;
+        const timingDifferential = (row[5] || 0) * -1;
         
         // FIX: Handle ETF sectors (index 13+ should use ETF category)
-        let sector = rawData.dimensions.sectors[sectorIdx];
-        if (symbolInfo[2] === 'ETF' && sectorIdx >= 13) {
-            const etfCatIdx = sectorIdx - 13;
-            if (etfCatIdx < rawData.dimensions.etf_categories.length) {
-                sector = rawData.dimensions.etf_categories[etfCatIdx];
+        let sector = 'Unknown';
+        
+        if (rawData.dimensions && rawData.dimensions.sectors) {
+            sector = rawData.dimensions.sectors[sectorIdx] || 'Unknown';
+            
+            if (symbolInfo[2] === 'ETF' && sectorIdx >= 13) {
+                const etfCatIdx = sectorIdx - 13;
+                if (rawData.dimensions.etf_categories && etfCatIdx < rawData.dimensions.etf_categories.length) {
+                    sector = rawData.dimensions.etf_categories[etfCatIdx];
+                }
             }
+        } else {
+            // Fallback: try to get sector directly from symbolInfo if dimensions not available
+            sector = symbolInfo[4] || 'Unknown';
         }
         
         return {
             symbol: row[0],
-            companyName: symbolInfo[0],
-            assetType: symbolInfo[2],
+            companyName: symbolInfo[0] || 'Unknown',
+            assetType: symbolInfo[2] || 'Unknown',
             sector: sector,
             date: row[1],
-            notional: row[2],
-            volume: row[3],
-            executions: row[4],
+            notional: row[2] || 0,
+            volume: row[3] || 0,
+            executions: row[4] || 0,
             timingDifferential: timingDifferential,
-            referenceGap: row[6],
-            priorClose: row[7],
-            vwap: row[8],
-            nextOpen: row[9],
-            nextClose: row[10],
+            referenceGap: row[6] || 0,
+            priorClose: row[7] || 0,
+            vwap: row[8] || 0,
+            nextOpen: row[9] || 0,
+            nextClose: row[10] || 0,
             directionalConsistency: row[11] === 1 ? '✓' : '✗'
         };
     });
